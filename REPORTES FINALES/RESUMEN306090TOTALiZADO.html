@@ -1,0 +1,105 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Reporte Totalizado por Proveedor</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; background: #f9f9f9; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: right; }
+    th { background: #eee; text-align: center; }
+    td:first-child, th:first-child { text-align: left; }
+    button { margin-top: 20px; padding: 10px 20px; font-size: 16px; }
+  </style>
+</head>
+<body>
+  <h2>Totalización por Proveedor (Facturas no Pagadas)</h2>
+  <div id="tablaProveedores"></div>
+  <button onclick="generarPDF()">Exportar a PDF</button>
+
+<script>
+let datos = [];
+
+fetch('https://cvpbtjlupswbyxenugpz.supabase.co/rest/v1/deuda_pddprotec25?select=*', {
+  headers: {
+    apikey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2cGJ0amx1cHN3Ynl4ZW51Z3B6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MDIxOTQsImV4cCI6MjA2MzI3ODE5NH0.iiJsYM3TtaGPdeCtPcEXwAz3LfFc1uJGECEvOErvrqY"
+  }
+})
+.then(r => r.json())
+.then(json => {
+  datos = json.filter(d => d.factura_pagada !== "SI");
+  generarTabla();
+});
+
+const proveedores = {};
+const formato = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' });
+
+function generarTabla() {
+  const hoy = new Date();
+  datos.forEach(d => {
+    const fecha = new Date(d.fecha);
+    const dias = isNaN(fecha.getTime()) ? null : Math.floor((hoy - fecha) / (1000 * 60 * 60 * 24));
+    const proveedor = d.razon_social_emisor || "SIN RAZÓN SOCIAL";
+    if (!proveedores[proveedor]) {
+      proveedores[proveedor] = { total: 0, r0_7: 0, r8_15: 0, r15_21: 0, r22_31: 0, r31_46: 0, rmas_46: 0 };
+    }
+    const monto = Number(d.total) || 0;
+    proveedores[proveedor].total += monto;
+    if (dias !== null) {
+      if (dias <= 7) proveedores[proveedor].r0_7 += monto;
+      else if (dias <= 15) proveedores[proveedor].r8_15 += monto;
+      else if (dias <= 21) proveedores[proveedor].r15_21 += monto;
+      else if (dias <= 31) proveedores[proveedor].r22_31 += monto;
+      else if (dias <= 46) proveedores[proveedor].r31_46 += monto;
+      else proveedores[proveedor].rmas_46 += monto;
+    }
+  });
+
+  const ordenados = Object.entries(proveedores).sort((a, b) => a[0].localeCompare(b[0]));
+
+  let html = `<table><thead><tr><th>Proveedor</th><th>Total</th><th>0-7</th><th>8-15</th><th>15-21</th><th>22-31</th><th>31-46</th><th>+46</th></tr></thead><tbody>`;
+  ordenados.forEach(([prov, val]) => {
+    html += `<tr><td>${prov}</td><td>${formato.format(val.total)}</td><td>${formato.format(val.r0_7)}</td><td>${formato.format(val.r8_15)}</td><td>${formato.format(val.r15_21)}</td><td>${formato.format(val.r22_31)}</td><td>${formato.format(val.r31_46)}</td><td>${formato.format(val.rmas_46)}</td></tr>`;
+  });
+  html += `</tbody></table>`;
+  document.getElementById('tablaProveedores').innerHTML = html;
+}
+
+function generarPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape' });
+
+  const filas = Object.entries(proveedores).sort((a, b) => a[0].localeCompare(b[0])).map(([prov, val]) => [
+    prov,
+    formato.format(val.total),
+    formato.format(val.r0_7),
+    formato.format(val.r8_15),
+    formato.format(val.r15_21),
+    formato.format(val.r22_31),
+    formato.format(val.r31_46),
+    formato.format(val.rmas_46)
+  ]);
+
+  doc.autoTable({
+    head: [["Proveedor", "Total", "0-7", "8-15", "15-21", "22-31", "31-46", "+46"]],
+    body: filas,
+    styles: { fontSize: 9 },
+    headStyles: { fillColor: [30, 30, 30] },
+    margin: { top: 20 },
+    didDrawPage: function (data) {
+      const pageSize = doc.internal.pageSize;
+      const pageHeight = pageSize.height;
+      const pageWidth = pageSize.width;
+      doc.setFontSize(10);
+      doc.text(`Página ${doc.internal.getNumberOfPages()}`, pageWidth - 20, pageHeight - 10);
+    }
+  });
+
+  doc.save('reporte_totalizado_proveedor.pdf');
+}
+</script>
+</body>
+</html>

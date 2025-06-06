@@ -1,0 +1,231 @@
+
+<!DOCTYPE html>
+
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<title>REPO Antigüedad General</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+<style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      padding: 10px 5px 30px 5px;
+      background: #f5f8fa;
+    }
+    h2 {
+      text-align: center;
+      color: #003366;
+    }
+    label {
+      display: block;
+      text-align: center;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+    button {
+      margin: 10px 5px;
+      padding: 10px 15px;
+      font-weight: bold;
+      background: #0066cc;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+table {
+  width: 95%;
+  max-width: 1200px;
+  margin: 25px auto;
+  border-collapse: collapse;
+  background: white;
+}
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+    }
+    th {
+      background: #dbe5f1;
+      color: #003366;
+      text-align: center;
+    }
+    td {
+      text-align: right;
+    }
+    .uuid, .proveedor {
+  max-width: 45ch;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+      text-align: left;
+    }
+    .uuid {
+      max-width: 350px;
+      word-break: break-word;
+    }
+    .factura {
+      max-width: 120px;
+      text-align: center;
+    }
+  
+    td, th { max-width: 15ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }td, th {
+  font-size: 12px;
+}
+.comentario {
+  max-width: none;
+  white-space: normal;
+  text-overflow: unset;
+  overflow: visible;
+}
+
+</style>
+</head>
+<body>
+<h2>Reporte General por Proveedor</h2>
+<div style="text-align: center;">
+<div>
+<button onclick="mostrarTodos()">Ver Todos</button>
+<button onclick="exportarPDF()">Exportar a PDF</button>
+</div>
+</div>
+<div id="contenedorTabla"></div>
+<script>
+let datos = [];
+
+fetch('https://cvpbtjlupswbyxenugpz.supabase.co/rest/v1/deuda_pddprotec25?select=*', {
+  headers: {
+    apikey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2cGJ0amx1cHN3Ynl4ZW51Z3B6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MDIxOTQsImV4cCI6MjA2MzI3ODE5NH0.iiJsYM3TtaGPdeCtPcEXwAz3LfFc1uJGECEvOErvrqY"
+  }
+})
+.then(response => {
+  if (!response.ok) throw new Error("Error al obtener datos: " + response.status);
+  return response.json();
+})
+.then(json => {
+  datos = json;
+  mostrarTodos();
+})
+.catch(error => {
+  alert("Error al cargar datos: " + error.message);
+  console.error(error);
+});
+
+function formatearFecha(fechaStr) {
+  if (!fechaStr) return "Sin fecha";
+  const fecha = new Date(fechaStr);
+  return isNaN(fecha.getTime()) ? "Fecha inválida" : fecha.toLocaleDateString('es-MX');
+}
+function mostrarTodos() {
+  if (!Array.isArray(datos)) {
+    alert("No se pudieron cargar los datos correctamente.");
+    return;
+  }
+
+  const hoy = new Date();
+  const datosFiltrados = datos
+    .filter(d => d.factura_pagada !== "SI")
+    .map(f => {
+      const fecha = new Date(f.fecha);
+      const dias = isNaN(fecha.getTime()) ? null : Math.floor((hoy - fecha) / (1000 * 60 * 60 * 24));
+      return {
+        ...f,
+        fecha_formateada: formatearFecha(f.fecha),
+        uuid_corto: f.uuid?.substring(0, 39),
+        factura_corta: (f.factura || "").substring(0, 15),
+      };
+    })
+    .sort((a, b) => {
+      const nombreA = (a.razon_social_emisor || "").toUpperCase();
+      const nombreB = (b.razon_social_emisor || "").toUpperCase();
+      if (nombreA < nombreB) return -1;
+      if (nombreA > nombreB) return 1;
+      return new Date(a.fecha) - new Date(b.fecha);
+    });
+
+  const formatoPesos = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' });
+let totalTotal = 0;
+
+  const filas = datosFiltrados.map(f => {
+    totalTotal += f.total || 0;
+
+return `<tr>
+  <td>${f.fecha_formateada}</td>
+  <td class="uuid">${f.uuid_corto}</td>
+  <td class="proveedor">${f.razon_social_emisor}</td>
+  <td class="factura">${f.factura_corta}</td>
+  <td class="factura">${(f.factura_fisicamente || "").toUpperCase() === "SI" ? "Recibida" : ""}</td>
+  <td>${formatoPesos.format(f.total)}</td>
+<td class="comentario">${f.comentario_factura_fisica || ""}</td>
+<td>${
+  Array.isArray(f.fotos) && f.fotos.length > 0
+    ? f.fotos.map(url => `<a href="${url}" target="_blank" title="Ver foto">🔗</a>`).join(' ')
+    : ''
+}</td>
+</tr>`;
+  }).join('');
+
+  document.getElementById('contenedorTabla').innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th colspan="5">Totales</th>
+          <th>${formatoPesos.format(totalTotal)}</th>
+        </tr>
+        <tr>
+    <th>Fecha</th>
+    <th>UUID</th>
+    <th>Proveedor</th>
+    <th>Factura</th>
+    <th>Recibida</th>
+    <th>Total</th>
+    <th>Comentario</th>
+    <th>Fotos</th>
+   <tr>
+      </thead>
+      <tbody>${filas}</tbody>
+    </table>`;
+}
+function exportarPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'letter' });
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.text("Reporte General por Proveedor", doc.internal.pageSize.getWidth() / 2, 30, { align: 'center' });
+
+  // Extraer encabezados y filas desde la tabla ya renderizada
+  const tabla = document.querySelector("table");
+doc.autoTable({
+  html: tabla,
+  startY: 50,
+  styles: {
+    fontSize: 7.5,
+    cellPadding: 2,
+    overflow: 'linebreak'
+  },
+  headStyles: {
+    fillColor: [0, 102, 204],
+    textColor: 255
+  },
+  theme: 'striped',
+  margin: { top: 50, left: 50, right: 10 },
+  didDrawPage: function (data) {
+    const pageSize = doc.internal.pageSize;
+    const pageHeight = pageSize.height;
+    doc.setFontSize(9);
+    doc.text(`Página ${doc.internal.getNumberOfPages()}`, pageSize.width - 60, pageHeight - 10);
+  }
+});
+
+
+  doc.save("reporte_general.pdf");
+}
+
+
+
+</script>
+</body>
+</html>
+

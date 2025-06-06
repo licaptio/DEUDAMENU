@@ -1,0 +1,183 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Subir XMLs múltiples a Supabase (solo egresos)</title>
+  <script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+    const supabase = createClient(
+      'https://cvpbtjlupswbyxenugpz.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2cGJ0amx1cHN3Ynl4ZW51Z3B6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MDIxOTQsImV4cCI6MjA2MzI3ODE5NH0.iiJsYM3TtaGPdeCtPcEXwAz3LfFc1uJGECEvOErvrqY'
+    );
+
+    const registrosTemporales = [];
+    const ignorados = [];
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const input = document.getElementById('xmlInput');
+      const procesarBtn = document.getElementById('procesarBtn');
+      const log = document.getElementById('log');
+
+      function agregarLinea(texto) {
+        log.textContent += texto + "\n";
+        log.scrollTop = log.scrollHeight;
+      }
+
+      input.addEventListener('change', async (e) => {
+        const files = Array.from(e.target.files);
+        for (const file of files) {
+          const reader = new FileReader();
+          reader.onload = function (event) {
+            const parser = new DOMParser();
+            const xml = parser.parseFromString(event.target.result, "application/xml");
+
+            const comprobante = xml.documentElement;
+            const tipoDeComprobante = comprobante.getAttribute("TipoDeComprobante");
+            const uuidNode = xml.getElementsByTagNameNS("http://www.sat.gob.mx/TimbreFiscalDigital", "TimbreFiscalDigital")[0];
+            const uuid = uuidNode?.getAttribute("UUID");
+
+            if (tipoDeComprobante !== "I") {
+              ignorados.push(`${uuid || 'SIN UUID'} (${tipoDeComprobante})`);
+              agregarLinea(`⏭️ Saltado: ${uuid || 'SIN UUID'} no es un ingreso (es tipo ${tipoDeComprobante})`);
+              return;
+            }
+
+            const fecha = uuidNode?.getAttribute("FechaTimbrado");
+            const rfc_emisor = xml.getElementsByTagNameNS("http://www.sat.gob.mx/cfd/4", "Emisor")[0]?.getAttribute("Rfc");
+            const razon_social_emisor = xml.getElementsByTagNameNS("http://www.sat.gob.mx/cfd/4", "Emisor")[0]?.getAttribute("Nombre");
+            const serie = comprobante.getAttribute("Serie") || "";
+            const folio = comprobante.getAttribute("Folio") || "";
+            const factura = `${serie}${folio}`;
+            const total = comprobante.getAttribute("Total");
+
+            const conceptos = Array.from(xml.getElementsByTagNameNS("http://www.sat.gob.mx/cfd/4", "Concepto"));
+            const listaConceptos = conceptos.map(el => {
+              const cantidad = el.getAttribute("Cantidad");
+              const claveProdServ = el.getAttribute("ClaveProdServ");
+              const claveUnidad = el.getAttribute("ClaveUnidad");
+              const descripcion = el.getAttribute("Descripcion");
+              const importe = el.getAttribute("Importe");
+              const unidad = el.getAttribute("Unidad");
+              const valorUnitario = el.getAttribute("ValorUnitario");
+              const objetoImp = el.getAttribute("ObjetoImp");
+
+              const traslados = Array.from(el.getElementsByTagNameNS("http://www.sat.gob.mx/cfd/4", "Traslado"));
+              const impuestos = traslados.map(t => {
+                const impuesto = t.getAttribute("Impuesto");
+                const tasa = t.getAttribute("TasaOCuota");
+                const importeImp = t.getAttribute("Importe");
+                return `Impuesto: ${impuesto} | Tasa: ${tasa} | Importe: ${importeImp}`;
+              }).join(" / ");
+
+              return `Cantidad: ${cantidad} | ClaveProdServ: ${claveProdServ} | ClaveUnidad: ${claveUnidad} | Descripción: ${descripcion} | Importe: ${importe} | Unidad: ${unidad} | ValorUnitario: ${valorUnitario} | ObjetoImp: ${objetoImp}` + (impuestos ? ` | ${impuestos}` : '');
+            }).filter(Boolean);
+            const concepto = listaConceptos.join("\n");
+
+            const data = {
+              uuid,
+              fecha,
+              rfc_emisor,
+              razon_social_emisor,
+              factura,
+              total: parseFloat(total),
+              factura_fisicamente: '',
+              comentario_factura_fisica: '',
+              factura_pagada: 'NO',
+              concepto
+            };
+
+            registrosTemporales.push(data);
+            agregarLinea(`📝 Egreso cargado: UUID ${uuid} agregado a la lista temporal (${registrosTemporales.length} total).`);
+          };
+          reader.readAsText(file);
+        }
+      });
+
+      
+      procesarBtn.addEventListener('click', async () => {
+        let totalInsertados = 0;
+        let totalActualizados = 0;
+        let totalSinCambios = 0;
+        let totalErrores = 0;
+    
+        if (registrosTemporales.length === 0 && ignorados.length === 0) {
+          agregarLinea("⚠️ No hay archivos cargados para procesar.");
+          return;
+        }
+
+        for (let i = 0; i < registrosTemporales.length; i++) {
+          const data = registrosTemporales[i];
+          agregarLinea(`🔍 Procesando UUID: ${data.uuid}`);
+
+          const { data: existente, error } = await supabase
+            .from('deuda_pddprotec25')
+            .select('*')
+            .eq('uuid', data.uuid)
+            .single();
+
+          if (error || !existente) {
+            const { error: insertError } = await supabase
+              .from('deuda_pddprotec25')
+              .insert([data]);
+
+            if (insertError) {
+            totalErrores++;
+              agregarLinea(`❌ Error al insertar ${data.uuid}: ${insertError.message}`);
+            } else {
+              totalInsertados++;
+              agregarLinea(`✅ Insertado: ${data.uuid}`);
+            }
+          } else {
+            const cambios = {};
+            for (const key in data) {
+              if (key !== "uuid" && data[key] !== existente[key]) {
+                cambios[key] = data[key];
+              }
+            }
+
+            if (Object.keys(cambios).length > 0) {
+              const { error: updateError } = await supabase
+                .from('deuda_pddprotec25')
+                .update(cambios)
+                .eq('uuid', data.uuid);
+
+              if (updateError) {
+                agregarLinea(`❌ Error al actualizar ${data.uuid}: ${updateError.message}`);
+              } else {
+                totalActualizados++;
+                agregarLinea(`🔁 Actualizado: ${data.uuid}`);
+              }
+            } else {
+              totalSinCambios++;
+              agregarLinea(`➖ Sin cambios en ${data.uuid}, no se modificó.`);
+            }
+          }
+        }
+
+        if (ignorados.length > 0) {
+          agregarLinea("📌 UUIDs ignorados por no ser tipo E:");
+          ignorados.forEach(u => agregarLinea(`- ${u}`));
+        }
+
+        
+        agregarLinea("🎉 Procesamiento finalizado.");
+        agregarLinea("📊 Resumen:");
+        agregarLinea(`✅ Insertados: ${totalInsertados}`);
+        agregarLinea(`🔁 Actualizados: ${totalActualizados}`);
+        agregarLinea(`➖ Sin cambios: ${totalSinCambios}`);
+        agregarLinea(`⏭️ Ignorados (otros tipos): ${ignorados.length}`);
+        agregarLinea(`❌ Errores: ${totalErrores}`);
+    
+        registrosTemporales.length = 0;
+      });
+    });
+  </script>
+</head>
+<body style="font-family: sans-serif; background: #f4f4f4; padding: 20px;">
+  <h2>Subir XMLs (solo ingresos tipo I) y procesar</h2>
+  <input type="file" id="xmlInput" accept=".xml" multiple>
+  <button id="procesarBtn" style="margin-top: 10px; padding: 10px 15px;">Procesar registros cargados</button>
+  <pre id="log" style="background: #eef; padding: 15px; border-radius: 5px; height: 300px; overflow-y: auto;"></pre>
+</body>
+</html>
