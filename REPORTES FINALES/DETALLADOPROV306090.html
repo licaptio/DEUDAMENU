@@ -161,7 +161,11 @@ return `<tr>
   <td class="proveedor">${f.razon_social_emisor}</td>
   <td class="factura">${f.factura_corta}</td>
 <td class="factura">${(f.factura_fisicamente || "").toUpperCase() === "SI" ? "Recibida" : ""}</td>
-  <td>${formatoPesos.format(f.total)}</td>
+<td>${f.comentario_factura_fisica || ""}</td>
+<td>${Array.isArray(f.fotos) && f.fotos.length > 0
+      ? `<a href="${f.fotos[0]}" target="_blank">Ver Foto</a>`
+      : ""}</td>
+<td>${formatoPesos.format(f.total)}</td>
 
       <td>${f.dias_0_7 ? formatoPesos.format(f.dias_0_7) : ""}</td>
       <td>${f.dias_8_15 ? formatoPesos.format(f.dias_8_15) : ""}</td>
@@ -176,7 +180,7 @@ return `<tr>
     <table>
       <thead>
         <tr>
-          <th colspan="5">Totales</th>
+          <th colspan="8">Totales</th>
           <th>${formatoPesos.format(totalTotal)}</th>
           <th>${formatoPesos.format(t0_7)}</th>
           <th>${formatoPesos.format(t8_15)}</th>
@@ -192,6 +196,8 @@ return `<tr>
           <th>Proveedor</th>
 <th>Factura</th>
 <th>Recibida</th>
+<th>Comentario</th>
+<th>Fotos</th>
 <th>Total</th>
           <th>0-7</th>
           <th>8-15</th>
