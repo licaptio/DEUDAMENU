@@ -170,7 +170,7 @@ return `<tr>
 <td class="factura">${(f.factura_fisicamente || "").toUpperCase() === "SI" ? "Recibida" : ""}</td>
 <td class="comentario">${f.comentario_factura_fisica || ""}</td>
 <td>${Array.isArray(f.fotos) && f.fotos.length > 0
-      ? `<a href="${f.fotos[0]}" target="_blank">Ver Foto</a>`
+      ? `<a href="${f.fotos[0]}" target="_blank" title="Ver Foto">🔗</a>`
       : ""}</td>
 <td>${formatoPesos.format(f.total)}</td>
 
