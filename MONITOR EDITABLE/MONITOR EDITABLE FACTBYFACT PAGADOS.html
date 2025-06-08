@@ -93,9 +93,15 @@
 <h2>Reporte General por Proveedor</h2>
 <div style="text-align: center;">
 <div>
-<button onclick="mostrarTodos()">Ver Todos</button>
-<button onclick="exportarPDF()">Exportar a PDF</button>
-</div>
+<div style="text-align: center;">
+  <label for="filtroProveedor">Filtrar por proveedor:</label>
+  <select id="filtroProveedor" onchange="filtrarPorProveedor()">
+    <option value="">-- Mostrar todos --</option>
+  </select>
+  <div>
+    <button onclick="mostrarTodos()">Ver Todos</button>
+    <button onclick="exportarPDF()">Exportar a PDF</button>
+  </div>
 </div>
 <div id="contenedorTabla"></div>
 <script>
@@ -112,6 +118,7 @@ fetch('https://cvpbtjlupswbyxenugpz.supabase.co/rest/v1/deuda_pddprotec25?select
 })
 .then(json => {
   datos = json;
+  llenarSelectProveedores();  // <--- NUEVA FUNCIÓN
   mostrarTodos();
 })
 .catch(error => {
@@ -157,10 +164,22 @@ function mostrarMensaje(texto, esError = false) {
     msg.classList.remove("visible");
   }, 1500);
 }
-
-
-
-function mostrarTodos() {
+function llenarSelectProveedores() {
+  const select = document.getElementById("filtroProveedor");
+  const proveedoresUnicos = [...new Set(datos.map(d => d.razon_social_emisor).filter(Boolean))].sort();
+  proveedoresUnicos.forEach(proveedor => {
+    const option = document.createElement("option");
+    option.value = proveedor;
+    option.textContent = proveedor;
+    select.appendChild(option);
+  });
+}
+function filtrarPorProveedor() {
+  const proveedorSeleccionado = document.getElementById("filtroProveedor").value;
+  mostrarTodos(proveedorSeleccionado);
+}
+    
+  function mostrarTodos(filtroProveedor = "") {
   if (!Array.isArray(datos)) {
     alert("No se pudieron cargar los datos correctamente.");
     return;
@@ -168,9 +187,9 @@ function mostrarTodos() {
 
   const ocultarPagadas = false;
   const hoy = new Date();
-  const datosFiltrados = datos
-    .filter(d => !ocultarPagadas || d.factura_pagada !== "SI")
-    .map(f => {
+const datosFiltrados = datos
+  .filter(d => (!filtroProveedor || d.razon_social_emisor === filtroProveedor))
+  .map(f => {
       const fecha = new Date(f.fecha);
       const dias = isNaN(fecha.getTime()) ? null : Math.floor((hoy - fecha) / (1000 * 60 * 60 * 24));
       return {
