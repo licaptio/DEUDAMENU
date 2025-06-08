@@ -71,6 +71,13 @@
     td, th { max-width: 15ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }td, th {
   font-size: 12px;
 }
+td.comentario {
+  white-space: normal !important;
+  word-break: break-word;
+  max-width: 15ch;
+  text-align: left;
+}
+
 </style>
 </head>
 <body>
@@ -161,7 +168,7 @@ return `<tr>
   <td class="proveedor">${f.razon_social_emisor}</td>
   <td class="factura">${f.factura_corta}</td>
 <td class="factura">${(f.factura_fisicamente || "").toUpperCase() === "SI" ? "Recibida" : ""}</td>
-<td>${f.comentario_factura_fisica || ""}</td>
+<td class="comentario">${f.comentario_factura_fisica || ""}</td>
 <td>${Array.isArray(f.fotos) && f.fotos.length > 0
       ? `<a href="${f.fotos[0]}" target="_blank">Ver Foto</a>`
       : ""}</td>
