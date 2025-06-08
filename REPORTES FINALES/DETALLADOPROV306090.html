@@ -123,6 +123,7 @@ function mostrarTodos() {
       return {
         ...f,
         fecha_formateada: formatearFecha(f.fecha),
+        dias: dias,
         uuid_corto: f.uuid?.substring(0, 39),
         factura_corta: (f.factura || "").substring(0, 15),
         dias_0_7: dias !== null && dias <= 7 ? f.total : 0,
@@ -155,6 +156,7 @@ function mostrarTodos() {
 
 return `<tr>
   <td>${f.fecha_formateada}</td>
+  <td>${f.dias !== null ? f.dias : ""}</td>
   <td class="uuid">${f.uuid_corto}</td>
   <td class="proveedor">${f.razon_social_emisor}</td>
   <td class="factura">${f.factura_corta}</td>
@@ -185,6 +187,7 @@ return `<tr>
         </tr>
         <tr>
           <th>Fecha</th>
+          <th>#Días</th>
           <th>UUID</th>
           <th>Proveedor</th>
 <th>Factura</th>
