@@ -133,12 +133,11 @@ function mostrarTodos() {
         dias: dias,
         uuid_corto: f.uuid?.substring(0, 39),
         factura_corta: (f.factura || "").substring(0, 15),
-        dias_0_7: dias !== null && dias <= 7 ? f.total : 0,
-        dias_8_15: dias !== null && dias > 7 && dias <= 15 ? f.total : 0,
-        dias_15_21: dias !== null && dias > 15 && dias <= 21 ? f.total : 0,
-        dias_22_31: dias !== null && dias > 21 && dias <= 31 ? f.total : 0,
-        dias_31_46: dias !== null && dias > 31 && dias <= 46 ? f.total : 0,
-        dias_mas_46: dias !== null && dias > 46 ? f.total : 0
+dias_0_7: dias !== null && dias <= 7 ? f.total : 0,
+dias_8_15: dias !== null && dias > 7 && dias <= 15 ? f.total : 0,
+dias_15_21: dias !== null && dias > 15 && dias <= 21 ? f.total : 0,
+dias_22_31: dias !== null && dias > 21 && dias <= 31 ? f.total : 0,
+dias_31_46: dias !== null && dias > 31 && dias <= 46 ? f.total : 0,
       };
     })
     .sort((a, b) => {
@@ -151,16 +150,15 @@ function mostrarTodos() {
 
   const formatoPesos = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' });
 
-  let totalTotal = 0, t0_7 = 0, t8_15 = 0, t15_21 = 0, t22_31 = 0, t31_46 = 0, tmas_46 = 0;
+let totalTotal = 0, t0_7 = 0, t8_13 = 0, t14_16 = 0, t17_21 = 0, t22_31 = 0, t32_46 = 0;
   const filas = datosFiltrados.map(f => {
     totalTotal += f.total || 0;
-    t0_7 += f.dias_0_7;
-    t8_15 += f.dias_8_15;
-    t15_21 += f.dias_15_21;
-    t22_31 += f.dias_22_31;
-    t31_46 += f.dias_31_46;
-    tmas_46 += f.dias_mas_46;
-
+t0_7 += f.dias_0_7;
+t8_13 += f.dias_8_13;
+t14_16 += f.dias_14_16;
+t17_21 += f.dias_17_21;
+t22_31 += f.dias_22_31;
+t32_46 += f.dias_32_46;
 return `<tr>
   <td>${f.fecha_formateada}</td>
   <td>${f.dias !== null ? f.dias : ""}</td>
@@ -173,13 +171,12 @@ return `<tr>
       ? `<a href="${f.fotos[0]}" target="_blank" title="Ver Foto">🔗</a>`
       : ""}</td>
 <td>${formatoPesos.format(f.total)}</td>
-
-      <td>${f.dias_0_7 ? formatoPesos.format(f.dias_0_7) : ""}</td>
-      <td>${f.dias_8_15 ? formatoPesos.format(f.dias_8_15) : ""}</td>
-      <td>${f.dias_15_21 ? formatoPesos.format(f.dias_15_21) : ""}</td>
-      <td>${f.dias_22_31 ? formatoPesos.format(f.dias_22_31) : ""}</td>
-      <td>${f.dias_31_46 ? formatoPesos.format(f.dias_31_46) : ""}</td>
-      <td>${f.dias_mas_46 ? formatoPesos.format(f.dias_mas_46) : ""}</td>
+<td>${f.dias_0_7 ? formatoPesos.format(f.dias_0_7) : ""}</td>
+<td>${f.dias_8_13 ? formatoPesos.format(f.dias_8_13) : ""}</td>
+<td>${f.dias_14_16 ? formatoPesos.format(f.dias_14_16) : ""}</td>
+<td>${f.dias_17_21 ? formatoPesos.format(f.dias_17_21) : ""}</td>
+<td>${f.dias_22_31 ? formatoPesos.format(f.dias_22_31) : ""}</td>
+<td>${f.dias_32_46 ? formatoPesos.format(f.dias_32_46) : ""}</td>
     </tr>`;
   }).join('');
 
@@ -188,13 +185,12 @@ return `<tr>
       <thead>
         <tr>
           <th colspan="8">Totales</th>
-          <th>${formatoPesos.format(totalTotal)}</th>
-          <th>${formatoPesos.format(t0_7)}</th>
-          <th>${formatoPesos.format(t8_15)}</th>
-          <th>${formatoPesos.format(t15_21)}</th>
-          <th>${formatoPesos.format(t22_31)}</th>
-          <th>${formatoPesos.format(t31_46)}</th>
-          <th>${formatoPesos.format(tmas_46)}</th>
+<th>${formatoPesos.format(t0_7)}</th>
+<th>${formatoPesos.format(t8_13)}</th>
+<th>${formatoPesos.format(t14_16)}</th>
+<th>${formatoPesos.format(t17_21)}</th>
+<th>${formatoPesos.format(t22_31)}</th>
+<th>${formatoPesos.format(t32_46)}</th>
         </tr>
         <tr>
           <th>Fecha</th>
@@ -206,12 +202,12 @@ return `<tr>
 <th>Comentario</th>
 <th>Fotos</th>
 <th>Total</th>
-          <th>0-7</th>
-          <th>8-15</th>
-          <th>15-21</th>
-          <th>22-31</th>
-          <th>31-46</th>
-          <th>+46</th>
+<th>0-7</th>
+<th>8-13</th>
+<th>14-16</th>
+<th>17-21</th>
+<th>22-31</th>
+<th>32-46</th>
         </tr>
       </thead>
       <tbody>${filas}</tbody>
