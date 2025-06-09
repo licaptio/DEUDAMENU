@@ -77,6 +77,15 @@ td.comentario {
   max-width: 15ch;
   text-align: left;
 }
+th.columna-14-16,
+td.columna-14-16 {
+  background-color: #f0f0f0; /* Gris tenue */
+}
+
+th.columna-17-21,
+td.columna-17-21 {
+  background-color: #fffacd; /* Amarillo tenue */
+}
 
 </style>
 </head>
@@ -175,8 +184,8 @@ return `<tr>
 <td>${formatoPesos.format(f.total)}</td>
 <td>${f.dias_0_7 ? formatoPesos.format(f.dias_0_7) : ""}</td>
 <td>${f.dias_8_13 ? formatoPesos.format(f.dias_8_13) : ""}</td>
-<td>${f.dias_14_16 ? formatoPesos.format(f.dias_14_16) : ""}</td>
-<td>${f.dias_17_21 ? formatoPesos.format(f.dias_17_21) : ""}</td>
+<td class="columna-14-16">${f.dias_14_16 ? formatoPesos.format(f.dias_14_16) : ""}</td>
+<td class="columna-17-21">${f.dias_17_21 ? formatoPesos.format(f.dias_17_21) : ""}</td>
 <td>${f.dias_22_31 ? formatoPesos.format(f.dias_22_31) : ""}</td>
 <td>${f.dias_32_46 ? formatoPesos.format(f.dias_32_46) : ""}</td>
     </tr>`;
@@ -190,8 +199,8 @@ return `<tr>
   <th>${formatoPesos.format(totalTotal)}</th> <!-- ⬅️ Esta es la clave -->
   <th>${formatoPesos.format(t0_7)}</th>
   <th>${formatoPesos.format(t8_13)}</th>
-  <th>${formatoPesos.format(t14_16)}</th>
-  <th>${formatoPesos.format(t17_21)}</th>
+<th class="columna-14-16">${formatoPesos.format(t14_16)}</th>
+<th class="columna-17-21">${formatoPesos.format(t17_21)}</th>
   <th>${formatoPesos.format(t22_31)}</th>
   <th>${formatoPesos.format(t32_46)}</th>
 </tr>
@@ -207,8 +216,8 @@ return `<tr>
 <th>Total</th>
 <th>0-7</th>
 <th>8-13</th>
-<th>14-16</th>
-<th>17-21</th>
+<th class="columna-14-16">14-16</th>
+<th class="columna-17-21">17-21</th>
 <th>22-31</th>
 <th>32-46</th>
         </tr>
