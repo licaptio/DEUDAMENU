@@ -124,22 +124,24 @@ function mostrarTodos() {
   const hoy = new Date();
   const datosFiltrados = datos
     .filter(d => d.factura_pagada !== "SI")
-    .map(f => {
-      const fecha = new Date(f.fecha);
-      const dias = isNaN(fecha.getTime()) ? null : Math.floor((hoy - fecha) / (1000 * 60 * 60 * 24));
-      return {
-        ...f,
-        fecha_formateada: formatearFecha(f.fecha),
-        dias: dias,
-        uuid_corto: f.uuid?.substring(0, 39),
-        factura_corta: (f.factura || "").substring(0, 15),
-dias_0_7: dias !== null && dias <= 7 ? f.total : 0,
-dias_8_15: dias !== null && dias > 7 && dias <= 15 ? f.total : 0,
-dias_15_21: dias !== null && dias > 15 && dias <= 21 ? f.total : 0,
-dias_22_31: dias !== null && dias > 21 && dias <= 31 ? f.total : 0,
-dias_31_46: dias !== null && dias > 31 && dias <= 46 ? f.total : 0,
-      };
-    })
+.map(f => {
+  const fecha = new Date(f.fecha);
+  const dias = isNaN(fecha.getTime()) ? null : Math.floor((hoy - fecha) / (1000 * 60 * 60 * 24));
+  return {
+    ...f,
+    fecha_formateada: formatearFecha(f.fecha),
+    dias: dias,
+    uuid_corto: f.uuid?.substring(0, 39),
+    factura_corta: (f.factura || "").substring(0, 15),
+
+    dias_0_7: dias !== null && dias <= 7 ? f.total : 0,
+    dias_8_13: dias !== null && dias > 7 && dias <= 13 ? f.total : 0,
+    dias_14_16: dias !== null && dias > 13 && dias <= 16 ? f.total : 0,
+    dias_17_21: dias !== null && dias > 16 && dias <= 21 ? f.total : 0,
+    dias_22_31: dias !== null && dias > 21 && dias <= 31 ? f.total : 0,
+    dias_32_46: dias !== null && dias > 31 && dias <= 46 ? f.total : 0,
+  };
+})
     .sort((a, b) => {
       const nombreA = (a.razon_social_emisor || "").toUpperCase();
       const nombreB = (b.razon_social_emisor || "").toUpperCase();
