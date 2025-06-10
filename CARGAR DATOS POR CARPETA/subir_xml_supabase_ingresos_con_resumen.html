@@ -130,11 +130,18 @@
             }
           } else {
             const cambios = {};
-            for (const key in data) {
-              if (key !== "uuid" && data[key] !== existente[key]) {
-                cambios[key] = data[key];
-              }
-            }
+const camposProtegidos = ["factura_pagada", "factura_fisicamente", "comentario_factura_fisica"];
+
+for (const key in data) {
+  if (
+    key !== "uuid" &&
+    !camposProtegidos.includes(key) &&
+    data[key] !== existente[key]
+  ) {
+    cambios[key] = data[key];
+  }
+}
+
 
             if (Object.keys(cambios).length > 0) {
               const { error: updateError } = await supabase
