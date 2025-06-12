@@ -87,6 +87,16 @@ td.columna-17-21 {
   background-color: #fffacd; /* Amarillo tenue */
 }
 
+.resaltado-violeta {
+  background-color: #e6ccff !important; /* violeta suave */
+  animation: parpadeoVioleta 1s infinite;
+}
+
+@keyframes parpadeoVioleta {
+  0%, 100% { background-color: #e6ccff; }
+  50% { background-color: #f2e6ff; }
+}
+    
 </style>
 </head>
 <body>
@@ -170,7 +180,9 @@ t14_16 += f.dias_14_16;
 t17_21 += f.dias_17_21;
 t22_31 += f.dias_22_31;
 t32_46 += f.dias_32_46;
-return `<tr>
+const claseFila = f.dias !== null && f.dias > 32 ? 'resaltado-violeta' : '';
+return `<tr class="${claseFila}">
+
   <td>${f.fecha_formateada}</td>
   <td>${f.dias !== null ? f.dias : ""}</td>
   <td class="uuid">${f.uuid_corto}</td>
