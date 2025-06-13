@@ -144,8 +144,7 @@ const datos = JSON.parse(localStorage.getItem('inventario_bod41')) || datosInici
             td.className = (campo === 'BOD41') ? 'largo' : 'corto';
 if (campo === 'BOD41') {
   td.textContent = fila[campo];
-   td.className = 'largo';
-} else if (campo === 'sto') {
+   } else if (campo === 'sto') {
   td.textContent = fila[campo]; // solo muestra el número, sin input
 } else {
   const input = document.createElement('input');
