@@ -144,6 +144,7 @@ const datos = JSON.parse(localStorage.getItem('inventario_bod41')) || datosInici
             td.className = (campo === 'BOD41') ? 'largo' : 'corto';
 if (campo === 'BOD41') {
   td.textContent = fila[campo];
+   td.className = 'largo';
 } else if (campo === 'sto') {
   td.textContent = fila[campo]; // solo muestra el número, sin input
 } else {
@@ -204,9 +205,13 @@ if (campo === 'BOD41') {
         const nuevaFila = tBody.insertRow();
         [0, 3].forEach(idx => {
           const cell = document.createElement('td');
-          cell.textContent = (idx === 0)
-            ? r.cells[0].textContent
-            : pedido;
+if (idx === 0) {
+  const nombre = r.cells[0].textContent.trim();
+  cell.textContent = nombre;
+} else {
+  cell.textContent = pedido;
+}
+
           cell.style.border = '1px solid #ccc';
           cell.style.padding = '.5rem';
           nuevaFila.appendChild(cell);
