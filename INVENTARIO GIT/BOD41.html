@@ -141,8 +141,8 @@ const datos = JSON.parse(localStorage.getItem('inventario_bod41')) || datosInici
           const tr = document.createElement('tr');
 ['BOD41', 'inventario', 'sto', 'pedido'].forEach(campo => {
             const td = document.createElement('td');
-            td.className = (campo === 'bod41') ? 'largo' : 'corto';
-if (campo === 'bod41') {
+            td.className = (campo === 'BOD41') ? 'largo' : 'corto';
+if (campo === 'BOD41') {
   td.textContent = fila[campo];
 } else if (campo === 'sto') {
   td.textContent = fila[campo]; // solo muestra el número, sin input
