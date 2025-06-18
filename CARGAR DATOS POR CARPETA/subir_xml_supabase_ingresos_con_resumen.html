@@ -3,13 +3,6 @@
 <head>
   <meta charset="UTF-8" />
   <title>Subir XMLs múltiples a Supabase (solo egresos)</title>
- <style>
-  @media (max-width: 600px) {
-    #manualForm {
-      grid-template-columns: 1fr !important;
-    }
-  }
-</style>
   <script type="module">
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
     const supabase = createClient(
@@ -24,94 +17,173 @@
       const input = document.getElementById('xmlInput');
       const procesarBtn = document.getElementById('procesarBtn');
       const log = document.getElementById('log');
-      const manualForm = document.getElementById('manualForm');
-function agregarLinea(texto, tipo = "log") {
-  log.textContent += texto + "\n";
-  log.scrollTop = log.scrollHeight;
 
-  if (tipo === "cargado") {
-    const li = document.createElement("li");
-    li.textContent = texto;
-    document.getElementById("listaCargados").appendChild(li);
-  }
+      function agregarLinea(texto) {
+        log.textContent += texto + "\n";
+        log.scrollTop = log.scrollHeight;
+      }
 
-  if (tipo === "ignorado") {
-    const li = document.createElement("li");
-    li.textContent = texto;
-    document.getElementById("listaIgnorados").appendChild(li);
-  }
-}
+      input.addEventListener('change', async (e) => {
+        const files = Array.from(e.target.files);
+        for (const file of files) {
+          const reader = new FileReader();
+          reader.onload = function (event) {
+            const parser = new DOMParser();
+            const xml = parser.parseFromString(event.target.result, "application/xml");
 
-  input.addEventListener('change', async (e) => {
-    const files = Array.from(e.target.files);
-    for (const file of files) {
-      const reader = new FileReader();
-      reader.onload = function (event) {
-  const parser = new DOMParser();
-  const xml = parser.parseFromString(event.target.result, "application/xml");
+            const comprobante = xml.documentElement;
+            const tipoDeComprobante = comprobante.getAttribute("TipoDeComprobante");
+            const uuidNode = xml.getElementsByTagNameNS("http://www.sat.gob.mx/TimbreFiscalDigital", "TimbreFiscalDigital")[0];
+            const uuid = uuidNode?.getAttribute("UUID");
 
-  const comprobante = xml.documentElement;
-  const tipoDeComprobante = comprobante.getAttribute("TipoDeComprobante");
-  const uuidNode = xml.getElementsByTagNameNS("http://www.sat.gob.mx/TimbreFiscalDigital", "TimbreFiscalDigital")[0];
-  const uuid = uuidNode?.getAttribute("UUID");
+            if (tipoDeComprobante !== "I") {
+              ignorados.push(`${uuid || 'SIN UUID'} (${tipoDeComprobante})`);
+              agregarLinea(`⏭️ Saltado: ${uuid || 'SIN UUID'} no es un ingreso (es tipo ${tipoDeComprobante})`);
+              return;
+            }
 
-  if (tipoDeComprobante !== "I") {
-    ignorados.push(`${uuid || 'SIN UUID'} (${tipoDeComprobante})`);
-agregarLinea(`⏭️ Saltado: ${uuid || 'SIN UUID'} no es un ingreso (es tipo ${tipoDeComprobante})`, "ignorado");
+            const fecha = uuidNode?.getAttribute("FechaTimbrado");
+            const rfc_emisor = xml.getElementsByTagNameNS("http://www.sat.gob.mx/cfd/4", "Emisor")[0]?.getAttribute("Rfc");
+            const razon_social_emisor = xml.getElementsByTagNameNS("http://www.sat.gob.mx/cfd/4", "Emisor")[0]?.getAttribute("Nombre");
+            const serie = comprobante.getAttribute("Serie") || "";
+            const folio = comprobante.getAttribute("Folio") || "";
+            const factura = `${serie}${folio}`;
+            const total = comprobante.getAttribute("Total");
 
+            const conceptos = Array.from(xml.getElementsByTagNameNS("http://www.sat.gob.mx/cfd/4", "Concepto"));
+            const listaConceptos = conceptos.map(el => {
+              const cantidad = el.getAttribute("Cantidad");
+              const claveProdServ = el.getAttribute("ClaveProdServ");
+              const claveUnidad = el.getAttribute("ClaveUnidad");
+              const descripcion = el.getAttribute("Descripcion");
+              const importe = el.getAttribute("Importe");
+              const unidad = el.getAttribute("Unidad");
+              const valorUnitario = el.getAttribute("ValorUnitario");
+              const objetoImp = el.getAttribute("ObjetoImp");
+
+              const traslados = Array.from(el.getElementsByTagNameNS("http://www.sat.gob.mx/cfd/4", "Traslado"));
+              const impuestos = traslados.map(t => {
+                const impuesto = t.getAttribute("Impuesto");
+                const tasa = t.getAttribute("TasaOCuota");
+                const importeImp = t.getAttribute("Importe");
+                return `Impuesto: ${impuesto} | Tasa: ${tasa} | Importe: ${importeImp}`;
+              }).join(" / ");
+
+              return `Cantidad: ${cantidad} | ClaveProdServ: ${claveProdServ} | ClaveUnidad: ${claveUnidad} | Descripción: ${descripcion} | Importe: ${importe} | Unidad: ${unidad} | ValorUnitario: ${valorUnitario} | ObjetoImp: ${objetoImp}` + (impuestos ? ` | ${impuestos}` : '');
+            }).filter(Boolean);
+            const concepto = listaConceptos.join("\n");
+
+            const data = {
+              uuid,
+              fecha,
+              rfc_emisor,
+              razon_social_emisor,
+              factura,
+              total: parseFloat(total),
+              factura_fisicamente: '',
+              comentario_factura_fisica: '',
+              factura_pagada: 'NO',
+              concepto
+            };
+
+            registrosTemporales.push(data);
+            agregarLinea(`📝 Egreso cargado: UUID ${uuid} agregado a la lista temporal (${registrosTemporales.length} total).`);
+          };
+          reader.readAsText(file);
+        }
+      });
+
+      
+procesarBtn.addEventListener('click', async () => {
+  let totalInsertados = 0;
+  let totalIgnorados = 0;
+  let totalErrores = 0;
+
+  if (registrosTemporales.length === 0 && ignorados.length === 0) {
+    agregarLinea("⚠️ No hay archivos cargados para procesar.");
     return;
   }
 
-  const fecha = uuidNode?.getAttribute("FechaTimbrado");
-  const rfc_emisor = xml.getElementsByTagNameNS("http://www.sat.gob.mx/cfd/4", "Emisor")[0]?.getAttribute("Rfc");
-  const razon_social_emisor = xml.getElementsByTagNameNS("http://www.sat.gob.mx/cfd/4", "Emisor")[0]?.getAttribute("Nombre");
-  const serie = comprobante.getAttribute("Serie") || "";
-  const folio = comprobante.getAttribute("Folio") || "";
-  const factura = `${serie}${folio}`;
-  const total = comprobante.getAttribute("Total");
+  for (let i = 0; i < registrosTemporales.length; i++) {
+    const data = registrosTemporales[i];
+    agregarLinea(`🔍 Procesando UUID: ${data.uuid}`);
 
-  const conceptos = Array.from(xml.getElementsByTagNameNS("http://www.sat.gob.mx/cfd/4", "Concepto"));
-  const listaConceptos = conceptos.map(el => {
-    const cantidad = el.getAttribute("Cantidad");
-    const claveProdServ = el.getAttribute("ClaveProdServ");
-    const claveUnidad = el.getAttribute("ClaveUnidad");
-    const descripcion = el.getAttribute("Descripcion");
-    const importe = el.getAttribute("Importe");
-    const unidad = el.getAttribute("Unidad");
-    const valorUnitario = el.getAttribute("ValorUnitario");
-    const objetoImp = el.getAttribute("ObjetoImp");
+    const { data: existente, error } = await supabase
+      .from('deuda_pddprotec25')
+      .select('uuid')
+      .eq('uuid', data.uuid)
+      .single();
 
-    const traslados = Array.from(el.getElementsByTagNameNS("http://www.sat.gob.mx/cfd/4", "Traslado"));
-    const impuestos = traslados.map(t => {
-      const impuesto = t.getAttribute("Impuesto");
-      const tasa = t.getAttribute("TasaOCuota");
-      const importeImp = t.getAttribute("Importe");
-      return `Impuesto: ${impuesto} | Tasa: ${tasa} | Importe: ${importeImp}`;
-    }).join(" / ");
+    if (error || !existente) {
+      const { error: insertError } = await supabase
+        .from('deuda_pddprotec25')
+        .insert([data]);
 
-    return `Cantidad: ${cantidad} | ClaveProdServ: ${claveProdServ} | ClaveUnidad: ${claveUnidad} | Descripción: ${descripcion} | Importe: ${importe} | Unidad: ${unidad} | ValorUnitario: ${valorUnitario} | ObjetoImp: ${objetoImp}` + (impuestos ? ` | ${impuestos}` : '');
-  }).filter(Boolean);
+      if (insertError) {
+        totalErrores++;
+        agregarLinea(`❌ Error al insertar ${data.uuid}: ${insertError.message}`);
+      } else {
+        totalInsertados++;
+        agregarLinea(`✅ Insertado: ${data.uuid}`);
+      }
+    } else {
+      totalIgnorados++;
+      agregarLinea(`⏭️ Ignorado: ${data.uuid} ya estaba registrado.`);
+    }
+  }
 
-  const concepto = listaConceptos.join("\\n");
+  if (ignorados.length > 0) {
+    agregarLinea("📌 UUIDs ignorados por no ser tipo I:");
+    ignorados.forEach(u => agregarLinea(`- ${u}`));
+  }
 
-  const data = {
-    uuid,
+  agregarLinea("🎉 Procesamiento finalizado.");
+  agregarLinea("📊 Resumen:");
+  agregarLinea(`✅ Insertados: ${totalInsertados}`);
+  agregarLinea(`⏭️ Ignorados (ya existentes): ${totalIgnorados}`);
+  agregarLinea(`⏭️ Ignorados (otros tipos): ${ignorados.length}`);
+  agregarLinea(`❌ Errores: ${totalErrores}`);
+
+  registrosTemporales.length = 0;
+});
+
+manualForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const fecha = document.getElementById('fechaManual').value;
+  const razon_social_emisor = document.getElementById('proveedorManual').value;
+  const rfc_emisor = document.getElementById('rfcManual').value || null;
+  const factura = document.getElementById('facturaManual').value;
+  const total = parseFloat(document.getElementById('totalManual').value);
+  const comentario_factura_fisica = document.getElementById('comentarioManual').value;
+  const concepto = document.getElementById('conceptoManual').value;
+
+  const dataManual = {
+    uuid: `MANUAL-${Date.now()}`, // identificador único manual
     fecha,
-    rfc_emisor,
     razon_social_emisor,
+    rfc_emisor,
     factura,
-    total: parseFloat(total),
-    factura_fisicamente: '',
-    comentario_factura_fisica: '',
-    factura_pagada: 'NO',
-    concepto
+    total,
+    concepto,
+    factura_fisicamente: 'NO',
+    comentario_factura_fisica,
+    factura_pagada: 'NO'
   };
 
-  registrosTemporales.push(data);
-agregarLinea(`📝 Ingreso cargado: UUID ${uuid}`, "cargado");
+  const { error } = await supabase
+    .from('deuda_pddprotec25')
+    .insert([dataManual]);
 
-};
+  if (error) {
+    agregarLinea(`❌ Error al insertar deuda manual: ${error.message}`);
+  } else {
+    agregarLinea(`✅ Deuda manual registrada: ${factura} (${total.toFixed(2)})`);
+    manualForm.reset();
+  }
+});
 
+    });
   </script>
 </head>
 <body style="font-family: sans-serif; background: #f4f4f4; padding: 20px;">
@@ -119,15 +191,7 @@ agregarLinea(`📝 Ingreso cargado: UUID ${uuid}`, "cargado");
   <input type="file" id="xmlInput" accept=".xml" multiple>
   <button id="procesarBtn" style="margin-top: 10px; padding: 10px 15px;">Procesar registros cargados</button>
   <pre id="log" style="background: #eef; padding: 15px; border-radius: 5px; height: 300px; overflow-y: auto;"></pre>
-<div style="margin-top: 20px;">
-  <h4>📂 Archivos cargados válidos:</h4>
-  <ul id="listaCargados" style="background: #e0ffe0; padding: 10px; border-radius: 5px;"></ul>
-
-  <h4>🚫 Archivos ignorados:</h4>
-  <ul id="listaIgnorados" style="background: #ffe0e0; padding: 10px; border-radius: 5px;"></ul>
-</div>
-
-  <h3>Agregar deuda manual (ej. impuestos, servicios)</h3>
+<h3>Agregar deuda manual (ej. impuestos, servicios)</h3>
 <form id="manualForm" style="background: #fff; padding: 20px; border-radius: 10px; max-width: 800px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
   <div>
     <label for="fechaManual">Fecha:</label>
@@ -171,4 +235,3 @@ agregarLinea(`📝 Ingreso cargado: UUID ${uuid}`, "cargado");
 
 </body>
 </html>
-
