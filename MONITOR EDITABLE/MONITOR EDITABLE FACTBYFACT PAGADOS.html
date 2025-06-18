@@ -179,30 +179,21 @@ function filtrarPorProveedor() {
   mostrarTodos(proveedorSeleccionado);
 }
     
-  function mostrarTodos(filtroProveedor = "") {
+function mostrarTodos(filtroProveedor = "") {
   if (!Array.isArray(datos)) {
     alert("No se pudieron cargar los datos correctamente.");
     return;
   }
 
-  const ocultarPagadas = false;
   const hoy = new Date();
-const datosFiltrados = datos
-  .filter(d => (!filtroProveedor || d.razon_social_emisor === filtroProveedor))
-  .map(f => {
-      const fecha = new Date(f.fecha);
-      const dias = isNaN(fecha.getTime()) ? null : Math.floor((hoy - fecha) / (1000 * 60 * 60 * 24));
+  const datosFiltrados = datos
+    .filter(d => (!filtroProveedor || d.razon_social_emisor === filtroProveedor))
+    .map(f => {
       return {
         ...f,
         fecha_formateada: formatearFecha(f.fecha),
         uuid_corto: f.uuid?.substring(0, 39),
-        factura_corta: (f.factura || "").substring(0, 15),
-        dias_0_7: dias !== null && dias <= 7 ? f.total : 0,
-        dias_8_15: dias !== null && dias > 7 && dias <= 15 ? f.total : 0,
-        dias_15_21: dias !== null && dias > 15 && dias <= 21 ? f.total : 0,
-        dias_22_31: dias !== null && dias > 21 && dias <= 31 ? f.total : 0,
-        dias_31_46: dias !== null && dias > 31 && dias <= 46 ? f.total : 0,
-        dias_mas_46: dias !== null && dias > 46 ? f.total : 0
+        factura_corta: (f.factura || "").substring(0, 15)
       };
     })
     .sort((a, b) => {
@@ -215,29 +206,22 @@ const datosFiltrados = datos
 
   const formatoPesos = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' });
 
-let totalTotal = 0;
+  let totalTotal = 0;
   const filas = datosFiltrados.map(f => {
     totalTotal += f.total || 0;
-    t0_7 += f.dias_0_7;
-    t8_15 += f.dias_8_15;
-    t15_21 += f.dias_15_21;
-    t22_31 += f.dias_22_31;
-    t31_46 += f.dias_31_46;
-    tmas_46 += f.dias_mas_46;
 
-return `<tr>
-  <td>${f.fecha_formateada}</td>
-  <td class="uuid">${f.uuid_corto}</td>
-  <td class="proveedor">${f.razon_social_emisor}</td>
-  <td class="factura">${f.factura_corta}</td>
-  <td>${formatoPesos.format(f.total)}</td>
-  <td style="text-align:center;">
-    <input type="checkbox"
-      ${f.factura_pagada === "SI" ? "checked" : ""}
-      onchange="actualizarPagado('${f.uuid}', this.checked)">
-  </td>
-</tr>`;
-
+    return `<tr>
+      <td>${f.fecha_formateada}</td>
+      <td class="uuid">${f.uuid_corto}</td>
+      <td class="proveedor">${f.razon_social_emisor}</td>
+      <td class="factura">${f.factura_corta}</td>
+      <td>${formatoPesos.format(f.total)}</td>
+      <td style="text-align:center;">
+        <input type="checkbox"
+          ${f.factura_pagada === "SI" ? "checked" : ""}
+          onchange="actualizarPagado('${f.uuid}', this.checked)">
+      </td>
+    </tr>`;
   }).join('');
 
   document.getElementById('contenedorTabla').innerHTML = `
@@ -249,14 +233,12 @@ return `<tr>
           <th></th>
         </tr>
         <tr>
-<tr>
-  <th>Fecha</th>
-  <th>UUID</th>
-  <th>Proveedor</th>
-  <th>Factura</th>
-  <th>Total</th>
-  <th>Pagada</th>
-</tr>
+          <th>Fecha</th>
+          <th>UUID</th>
+          <th>Proveedor</th>
+          <th>Factura</th>
+          <th>Total</th>
+          <th>Pagada</th>
         </tr>
       </thead>
       <tbody>${filas}</tbody>
