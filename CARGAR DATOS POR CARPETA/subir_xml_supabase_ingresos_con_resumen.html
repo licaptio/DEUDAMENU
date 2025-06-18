@@ -25,144 +25,75 @@
       const procesarBtn = document.getElementById('procesarBtn');
       const log = document.getElementById('log');
       const manualForm = document.getElementById('manualForm');
+ // ⬇️ Pega aquí el bloque completo del input.addEventListener
+  input.addEventListener('change', async (e) => {
+    const files = Array.from(e.target.files);
+    for (const file of files) {
+      const reader = new FileReader();
+      reader.onload = function (event) {
+  const parser = new DOMParser();
+  const xml = parser.parseFromString(event.target.result, "application/xml");
 
-      // Asignar fecha actual al formulario manual
-      document.getElementById('fechaManual').valueAsDate = new Date();
+  const comprobante = xml.documentElement;
+  const tipoDeComprobante = comprobante.getAttribute("TipoDeComprobante");
+  const uuidNode = xml.getElementsByTagNameNS("http://www.sat.gob.mx/TimbreFiscalDigital", "TimbreFiscalDigital")[0];
+  const uuid = uuidNode?.getAttribute("UUID");
 
-      function generarUUID() {
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-          const r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-          return v.toString(16);
-        });
-      }
+  if (tipoDeComprobante !== "E") {
+    ignorados.push(`${uuid || 'SIN UUID'} (${tipoDeComprobante})`);
+    agregarLinea(`⏭️ Saltado: ${uuid || 'SIN UUID'} no es un egreso (es tipo ${tipoDeComprobante})`);
+    return;
+  }
 
-      function agregarLinea(texto) {
-        log.textContent += texto + "\n";
-        log.scrollTop = log.scrollHeight;
-      }
+  const fecha = uuidNode?.getAttribute("FechaTimbrado");
+  const rfc_emisor = xml.getElementsByTagNameNS("http://www.sat.gob.mx/cfd/4", "Emisor")[0]?.getAttribute("Rfc");
+  const razon_social_emisor = xml.getElementsByTagNameNS("http://www.sat.gob.mx/cfd/4", "Emisor")[0]?.getAttribute("Nombre");
+  const serie = comprobante.getAttribute("Serie") || "";
+  const folio = comprobante.getAttribute("Folio") || "";
+  const factura = `${serie}${folio}`;
+  const total = comprobante.getAttribute("Total");
 
-      manualForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
+  const conceptos = Array.from(xml.getElementsByTagNameNS("http://www.sat.gob.mx/cfd/4", "Concepto"));
+  const listaConceptos = conceptos.map(el => {
+    const cantidad = el.getAttribute("Cantidad");
+    const claveProdServ = el.getAttribute("ClaveProdServ");
+    const claveUnidad = el.getAttribute("ClaveUnidad");
+    const descripcion = el.getAttribute("Descripcion");
+    const importe = el.getAttribute("Importe");
+    const unidad = el.getAttribute("Unidad");
+    const valorUnitario = el.getAttribute("ValorUnitario");
+    const objetoImp = el.getAttribute("ObjetoImp");
 
-        const uuid = generarUUID();
-        const fecha = document.getElementById('fechaManual').value;
-        const razon_social_emisor = document.getElementById('proveedorManual').value.trim();
-        const rfc_emisor = document.getElementById('rfcManual').value.trim() || "XAXX010101000";
-        const factura = document.getElementById('facturaManual').value.trim();
-        const total = parseFloat(document.getElementById('totalManual').value);
-        const comentario_factura_fisica = document.getElementById('comentarioManual').value.trim();
-        const concepto = document.getElementById('conceptoManual').value.trim() || "Deuda capturada manualmente";
+    const traslados = Array.from(el.getElementsByTagNameNS("http://www.sat.gob.mx/cfd/4", "Traslado"));
+    const impuestos = traslados.map(t => {
+      const impuesto = t.getAttribute("Impuesto");
+      const tasa = t.getAttribute("TasaOCuota");
+      const importeImp = t.getAttribute("Importe");
+      return `Impuesto: ${impuesto} | Tasa: ${tasa} | Importe: ${importeImp}`;
+    }).join(" / ");
 
-        const data = {
-          uuid,
-          fecha,
-          razon_social_emisor,
-          rfc_emisor,
-          factura,
-          total,
-          factura_pagada: "NO",
-          factura_fisicamente: "SI",
-          comentario_factura_fisica,
-          concepto
-        };
+    return `Cantidad: ${cantidad} | ClaveProdServ: ${claveProdServ} | ClaveUnidad: ${claveUnidad} | Descripción: ${descripcion} | Importe: ${importe} | Unidad: ${unidad} | ValorUnitario: ${valorUnitario} | ObjetoImp: ${objetoImp}` + (impuestos ? ` | ${impuestos}` : '');
+  }).filter(Boolean);
 
-        const { error } = await supabase
-          .from('deuda_pddprotec25')
-          .insert([data]);
+  const concepto = listaConceptos.join("\\n");
 
-        if (error) {
-          agregarLinea(`❌ Error al insertar deuda manual: ${error.message}`);
-          alert("Error: " + error.message);
-        } else {
-          agregarLinea(`✅ Deuda manual registrada: ${uuid}`);
-          alert("✅ Deuda manual guardada correctamente");
-          manualForm.reset();
-          document.getElementById('fechaManual').valueAsDate = new Date();
-        }
-      });
+  const data = {
+    uuid,
+    fecha,
+    rfc_emisor,
+    razon_social_emisor,
+    factura,
+    total: parseFloat(total),
+    factura_fisicamente: '',
+    comentario_factura_fisica: '',
+    factura_pagada: 'NO',
+    concepto
+  };
 
-      procesarBtn.addEventListener('click', async () => {
-        let totalInsertados = 0;
-        let totalActualizados = 0;
-        let totalSinCambios = 0;
-        let totalErrores = 0;
+  registrosTemporales.push(data);
+  agregarLinea(`📝 Egreso cargado: UUID ${uuid} agregado a la lista temporal (${registrosTemporales.length} total).`);
+};
 
-        if (registrosTemporales.length === 0 && ignorados.length === 0) {
-          agregarLinea("⚠️ No hay archivos cargados para procesar.");
-          return;
-        }
-
-        for (let i = 0; i < registrosTemporales.length; i++) {
-          const data = registrosTemporales[i];
-          agregarLinea(`🔍 Procesando UUID: ${data.uuid}`);
-
-          const { data: existente, error } = await supabase
-            .from('deuda_pddprotec25')
-            .select('*')
-            .eq('uuid', data.uuid)
-            .single();
-
-          if (error || !existente) {
-            const { error: insertError } = await supabase
-              .from('deuda_pddprotec25')
-              .insert([data]);
-
-            if (insertError) {
-              totalErrores++;
-              agregarLinea(`❌ Error al insertar ${data.uuid}: ${insertError.message}`);
-            } else {
-              totalInsertados++;
-              agregarLinea(`✅ Insertado: ${data.uuid}`);
-            }
-          } else {
-            const cambios = {};
-            const camposProtegidos = ["factura_pagada", "factura_fisicamente", "comentario_factura_fisica"];
-
-            for (const key in data) {
-              if (
-                key !== "uuid" &&
-                !camposProtegidos.includes(key) &&
-                data[key] !== existente[key]
-              ) {
-                cambios[key] = data[key];
-              }
-            }
-
-            if (Object.keys(cambios).length > 0) {
-              const { error: updateError } = await supabase
-                .from('deuda_pddprotec25')
-                .update(cambios)
-                .eq('uuid', data.uuid);
-
-              if (updateError) {
-                agregarLinea(`❌ Error al actualizar ${data.uuid}: ${updateError.message}`);
-              } else {
-                totalActualizados++;
-                agregarLinea(`🔁 Actualizado: ${data.uuid}`);
-              }
-            } else {
-              totalSinCambios++;
-              agregarLinea(`➖ Sin cambios en ${data.uuid}, no se modificó.`);
-            }
-          }
-        }
-
-        if (ignorados.length > 0) {
-          agregarLinea("📌 UUIDs ignorados por no ser tipo E:");
-          ignorados.forEach(u => agregarLinea(`- ${u}`));
-        }
-
-        agregarLinea("🎉 Procesamiento finalizado.");
-        agregarLinea("📊 Resumen:");
-        agregarLinea(`✅ Insertados: ${totalInsertados}`);
-        agregarLinea(`🔁 Actualizados: ${totalActualizados}`);
-        agregarLinea(`➖ Sin cambios: ${totalSinCambios}`);
-        agregarLinea(`⏭️ Ignorados (otros tipos): ${ignorados.length}`);
-        agregarLinea(`❌ Errores: ${totalErrores}`);
-
-        registrosTemporales.length = 0;
-      });
-    });
   </script>
 </head>
 <body style="font-family: sans-serif; background: #f4f4f4; padding: 20px;">
