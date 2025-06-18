@@ -165,30 +165,47 @@
   <pre id="log" style="background: #eef; padding: 15px; border-radius: 5px; height: 300px; overflow-y: auto;"></pre>
 
   <h3>Agregar deuda manual (ej. impuestos, servicios)</h3>
-  <form id="manualForm" style="background: #fff; padding: 15px; border-radius: 8px; max-width: 400px;">
-    <label>Fecha:
-      <input type="date" id="fechaManual" required>
-    </label>
-    <label>Proveedor:
-      <input type="text" id="proveedorManual" placeholder="SAT o nombre" required>
-    </label>
-    <label>RFC (opcional):
-      <input type="text" id="rfcManual" placeholder="Ej. SAT990101SAT">
-    </label>
-    <label>Factura / Folio interno:
-      <input type="text" id="facturaManual" placeholder="Ej. IMP-306090" required>
-    </label>
-    <label>Total:
-      <input type="number" id="totalManual" step="0.01" required>
-    </label>
-    <label>Comentario:
-      <input type="text" id="comentarioManual" placeholder="Ej. Pago ISR mayo" required>
-    </label>
-    <label>Concepto general:
-      <textarea id="conceptoManual" rows="2" placeholder="Ej. Pago de impuestos federales"></textarea>
-    </label>
-    <button type="submit">Registrar deuda manual</button>
-  </form>
+<form id="manualForm" style="background: #fff; padding: 20px; border-radius: 10px; max-width: 800px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+  <div>
+    <label for="fechaManual">Fecha:</label>
+    <input type="date" id="fechaManual" required style="width: 100%;">
+  </div>
+
+  <div>
+    <label for="proveedorManual">Proveedor:</label>
+    <input type="text" id="proveedorManual" placeholder="SAT o nombre" required style="width: 100%;">
+  </div>
+
+  <div>
+    <label for="rfcManual">RFC (opcional):</label>
+    <input type="text" id="rfcManual" placeholder="Ej. SAT990101SAT" style="width: 100%;">
+  </div>
+
+  <div>
+    <label for="facturaManual">Factura / Folio interno:</label>
+    <input type="text" id="facturaManual" placeholder="Ej. IMP-306090" required style="width: 100%;">
+  </div>
+
+  <div>
+    <label for="totalManual">Total:</label>
+    <input type="number" id="totalManual" step="0.01" required style="width: 100%;">
+  </div>
+
+  <div>
+    <label for="comentarioManual">Comentario:</label>
+    <input type="text" id="comentarioManual" placeholder="Ej. Pago ISR mayo" required style="width: 100%;">
+  </div>
+
+  <div style="grid-column: span 2;">
+    <label for="conceptoManual">Concepto general:</label>
+    <textarea id="conceptoManual" rows="2" placeholder="Ej. Pago de impuestos federales" style="width: 100%;"></textarea>
+  </div>
+
+  <div style="grid-column: span 2; text-align: center;">
+    <button type="submit" style="padding: 10px 20px; font-weight: bold;">Registrar deuda manual</button>
+  </div>
+</form>
+
 </body>
 </html>
 
