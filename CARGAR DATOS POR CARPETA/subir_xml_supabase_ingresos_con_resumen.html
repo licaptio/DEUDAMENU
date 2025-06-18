@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -18,89 +17,69 @@
       const input = document.getElementById('xmlInput');
       const procesarBtn = document.getElementById('procesarBtn');
       const log = document.getElementById('log');
+      const manualForm = document.getElementById('manualForm');
+
+      // Asignar fecha actual al formulario manual
+      document.getElementById('fechaManual').valueAsDate = new Date();
+
+      function generarUUID() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+          const r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+          return v.toString(16);
+        });
+      }
 
       function agregarLinea(texto) {
         log.textContent += texto + "\n";
         log.scrollTop = log.scrollHeight;
       }
 
-      input.addEventListener('change', async (e) => {
-        const files = Array.from(e.target.files);
-        for (const file of files) {
-          const reader = new FileReader();
-          reader.onload = function (event) {
-            const parser = new DOMParser();
-            const xml = parser.parseFromString(event.target.result, "application/xml");
+      manualForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
 
-            const comprobante = xml.documentElement;
-            const tipoDeComprobante = comprobante.getAttribute("TipoDeComprobante");
-            const uuidNode = xml.getElementsByTagNameNS("http://www.sat.gob.mx/TimbreFiscalDigital", "TimbreFiscalDigital")[0];
-            const uuid = uuidNode?.getAttribute("UUID");
+        const uuid = generarUUID();
+        const fecha = document.getElementById('fechaManual').value;
+        const razon_social_emisor = document.getElementById('proveedorManual').value.trim();
+        const rfc_emisor = document.getElementById('rfcManual').value.trim() || "XAXX010101000";
+        const factura = document.getElementById('facturaManual').value.trim();
+        const total = parseFloat(document.getElementById('totalManual').value);
+        const comentario_factura_fisica = document.getElementById('comentarioManual').value.trim();
+        const concepto = document.getElementById('conceptoManual').value.trim() || "Deuda capturada manualmente";
 
-            if (tipoDeComprobante !== "I") {
-              ignorados.push(`${uuid || 'SIN UUID'} (${tipoDeComprobante})`);
-              agregarLinea(`⏭️ Saltado: ${uuid || 'SIN UUID'} no es un ingreso (es tipo ${tipoDeComprobante})`);
-              return;
-            }
+        const data = {
+          uuid,
+          fecha,
+          razon_social_emisor,
+          rfc_emisor,
+          factura,
+          total,
+          factura_pagada: "NO",
+          factura_fisicamente: "SI",
+          comentario_factura_fisica,
+          concepto
+        };
 
-            const fecha = uuidNode?.getAttribute("FechaTimbrado");
-            const rfc_emisor = xml.getElementsByTagNameNS("http://www.sat.gob.mx/cfd/4", "Emisor")[0]?.getAttribute("Rfc");
-            const razon_social_emisor = xml.getElementsByTagNameNS("http://www.sat.gob.mx/cfd/4", "Emisor")[0]?.getAttribute("Nombre");
-            const serie = comprobante.getAttribute("Serie") || "";
-            const folio = comprobante.getAttribute("Folio") || "";
-            const factura = `${serie}${folio}`;
-            const total = comprobante.getAttribute("Total");
+        const { error } = await supabase
+          .from('deuda_pddprotec25')
+          .insert([data]);
 
-            const conceptos = Array.from(xml.getElementsByTagNameNS("http://www.sat.gob.mx/cfd/4", "Concepto"));
-            const listaConceptos = conceptos.map(el => {
-              const cantidad = el.getAttribute("Cantidad");
-              const claveProdServ = el.getAttribute("ClaveProdServ");
-              const claveUnidad = el.getAttribute("ClaveUnidad");
-              const descripcion = el.getAttribute("Descripcion");
-              const importe = el.getAttribute("Importe");
-              const unidad = el.getAttribute("Unidad");
-              const valorUnitario = el.getAttribute("ValorUnitario");
-              const objetoImp = el.getAttribute("ObjetoImp");
-
-              const traslados = Array.from(el.getElementsByTagNameNS("http://www.sat.gob.mx/cfd/4", "Traslado"));
-              const impuestos = traslados.map(t => {
-                const impuesto = t.getAttribute("Impuesto");
-                const tasa = t.getAttribute("TasaOCuota");
-                const importeImp = t.getAttribute("Importe");
-                return `Impuesto: ${impuesto} | Tasa: ${tasa} | Importe: ${importeImp}`;
-              }).join(" / ");
-
-              return `Cantidad: ${cantidad} | ClaveProdServ: ${claveProdServ} | ClaveUnidad: ${claveUnidad} | Descripción: ${descripcion} | Importe: ${importe} | Unidad: ${unidad} | ValorUnitario: ${valorUnitario} | ObjetoImp: ${objetoImp}` + (impuestos ? ` | ${impuestos}` : '');
-            }).filter(Boolean);
-            const concepto = listaConceptos.join("\n");
-
-            const data = {
-              uuid,
-              fecha,
-              rfc_emisor,
-              razon_social_emisor,
-              factura,
-              total: parseFloat(total),
-              factura_fisicamente: '',
-              comentario_factura_fisica: '',
-              factura_pagada: 'NO',
-              concepto
-            };
-
-            registrosTemporales.push(data);
-            agregarLinea(`📝 Egreso cargado: UUID ${uuid} agregado a la lista temporal (${registrosTemporales.length} total).`);
-          };
-          reader.readAsText(file);
+        if (error) {
+          agregarLinea(`❌ Error al insertar deuda manual: ${error.message}`);
+          alert("Error: " + error.message);
+        } else {
+          agregarLinea(`✅ Deuda manual registrada: ${uuid}`);
+          alert("✅ Deuda manual guardada correctamente");
+          manualForm.reset();
+          document.getElementById('fechaManual').valueAsDate = new Date();
         }
       });
 
-      
       procesarBtn.addEventListener('click', async () => {
         let totalInsertados = 0;
         let totalActualizados = 0;
         let totalSinCambios = 0;
         let totalErrores = 0;
-    
+
         if (registrosTemporales.length === 0 && ignorados.length === 0) {
           agregarLinea("⚠️ No hay archivos cargados para procesar.");
           return;
@@ -122,7 +101,7 @@
               .insert([data]);
 
             if (insertError) {
-            totalErrores++;
+              totalErrores++;
               agregarLinea(`❌ Error al insertar ${data.uuid}: ${insertError.message}`);
             } else {
               totalInsertados++;
@@ -130,18 +109,17 @@
             }
           } else {
             const cambios = {};
-const camposProtegidos = ["factura_pagada", "factura_fisicamente", "comentario_factura_fisica"];
+            const camposProtegidos = ["factura_pagada", "factura_fisicamente", "comentario_factura_fisica"];
 
-for (const key in data) {
-  if (
-    key !== "uuid" &&
-    !camposProtegidos.includes(key) &&
-    data[key] !== existente[key]
-  ) {
-    cambios[key] = data[key];
-  }
-}
-
+            for (const key in data) {
+              if (
+                key !== "uuid" &&
+                !camposProtegidos.includes(key) &&
+                data[key] !== existente[key]
+              ) {
+                cambios[key] = data[key];
+              }
+            }
 
             if (Object.keys(cambios).length > 0) {
               const { error: updateError } = await supabase
@@ -167,7 +145,6 @@ for (const key in data) {
           ignorados.forEach(u => agregarLinea(`- ${u}`));
         }
 
-        
         agregarLinea("🎉 Procesamiento finalizado.");
         agregarLinea("📊 Resumen:");
         agregarLinea(`✅ Insertados: ${totalInsertados}`);
@@ -175,7 +152,7 @@ for (const key in data) {
         agregarLinea(`➖ Sin cambios: ${totalSinCambios}`);
         agregarLinea(`⏭️ Ignorados (otros tipos): ${ignorados.length}`);
         agregarLinea(`❌ Errores: ${totalErrores}`);
-    
+
         registrosTemporales.length = 0;
       });
     });
@@ -186,5 +163,32 @@ for (const key in data) {
   <input type="file" id="xmlInput" accept=".xml" multiple>
   <button id="procesarBtn" style="margin-top: 10px; padding: 10px 15px;">Procesar registros cargados</button>
   <pre id="log" style="background: #eef; padding: 15px; border-radius: 5px; height: 300px; overflow-y: auto;"></pre>
+
+  <h3>Agregar deuda manual (ej. impuestos, servicios)</h3>
+  <form id="manualForm" style="background: #fff; padding: 15px; border-radius: 8px; max-width: 400px;">
+    <label>Fecha:
+      <input type="date" id="fechaManual" required>
+    </label>
+    <label>Proveedor:
+      <input type="text" id="proveedorManual" placeholder="SAT o nombre" required>
+    </label>
+    <label>RFC (opcional):
+      <input type="text" id="rfcManual" placeholder="Ej. SAT990101SAT">
+    </label>
+    <label>Factura / Folio interno:
+      <input type="text" id="facturaManual" placeholder="Ej. IMP-306090" required>
+    </label>
+    <label>Total:
+      <input type="number" id="totalManual" step="0.01" required>
+    </label>
+    <label>Comentario:
+      <input type="text" id="comentarioManual" placeholder="Ej. Pago ISR mayo" required>
+    </label>
+    <label>Concepto general:
+      <textarea id="conceptoManual" rows="2" placeholder="Ej. Pago de impuestos federales"></textarea>
+    </label>
+    <button type="submit">Registrar deuda manual</button>
+  </form>
 </body>
 </html>
+
