@@ -25,7 +25,11 @@
       const procesarBtn = document.getElementById('procesarBtn');
       const log = document.getElementById('log');
       const manualForm = document.getElementById('manualForm');
- // ⬇️ Pega aquí el bloque completo del input.addEventListener
+ function agregarLinea(texto) {
+  log.textContent += texto + "\n";
+  log.scrollTop = log.scrollHeight;
+}
+
   input.addEventListener('change', async (e) => {
     const files = Array.from(e.target.files);
     for (const file of files) {
@@ -39,7 +43,7 @@
   const uuidNode = xml.getElementsByTagNameNS("http://www.sat.gob.mx/TimbreFiscalDigital", "TimbreFiscalDigital")[0];
   const uuid = uuidNode?.getAttribute("UUID");
 
-  if (tipoDeComprobante !== "E") {
+  if (tipoDeComprobante !== "I") {
     ignorados.push(`${uuid || 'SIN UUID'} (${tipoDeComprobante})`);
     agregarLinea(`⏭️ Saltado: ${uuid || 'SIN UUID'} no es un egreso (es tipo ${tipoDeComprobante})`);
     return;
@@ -91,7 +95,8 @@
   };
 
   registrosTemporales.push(data);
-  agregarLinea(`📝 Egreso cargado: UUID ${uuid} agregado a la lista temporal (${registrosTemporales.length} total).`);
+  agregarLinea(`📝 Ingreso cargado: UUID ${uuid} agregado a la lista temporal...`);
+  agregarLinea(`⏭️ Saltado: ${uuid || 'SIN UUID'} no es un ingreso (es tipo ${tipoDeComprobante})`);
 };
 
   </script>
