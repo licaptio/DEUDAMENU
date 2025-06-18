@@ -45,7 +45,7 @@
 
   if (tipoDeComprobante !== "I") {
     ignorados.push(`${uuid || 'SIN UUID'} (${tipoDeComprobante})`);
-    agregarLinea(`⏭️ Saltado: ${uuid || 'SIN UUID'} no es un egreso (es tipo ${tipoDeComprobante})`);
+    agregarLinea(`⏭️ Saltado: ${uuid || 'SIN UUID'} no es un ingreso (es tipo ${tipoDeComprobante})`);
     return;
   }
 
