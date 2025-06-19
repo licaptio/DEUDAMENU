@@ -50,24 +50,43 @@
     td {
       text-align: right;
     }
-    .uuid, .proveedor {
-  max-width: 45ch;
+    th, td {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-      text-align: left;
-    }
-    .uuid {
-      max-width: 350px;
-      word-break: break-word;
-    }
-    .factura {
-      max-width: 120px;
-      text-align: center;
-    }
-  
-    td, th { max-width: 15ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }td, th {
-  font-size: 12px;
+}
+
+/* Ajustes por columna */
+.col-fecha {
+  width: 90px;
+  min-width: 70px;
+  text-align: center;
+}
+
+.col-uuid {
+  width: 220px;
+  min-width: 180px;
+  text-align: left;
+}
+
+.col-proveedor {
+  min-width: 180px;
+  text-align: left;
+}
+
+.col-factura {
+  width: 100px;
+  text-align: center;
+}
+
+.col-total {
+  width: 110px;
+  text-align: right;
+}
+
+.col-pagada {
+  width: 70px;
+  text-align: center;
 }
 #mensajeFlotante {
   position: fixed;
@@ -210,18 +229,19 @@ function mostrarTodos(filtroProveedor = "") {
   const filas = datosFiltrados.map(f => {
     totalTotal += f.total || 0;
 
-    return `<tr>
-      <td>${f.fecha_formateada}</td>
-      <td class="uuid">${f.uuid_corto}</td>
-      <td class="proveedor">${f.razon_social_emisor}</td>
-      <td class="factura">${f.factura_corta}</td>
-      <td>${formatoPesos.format(f.total)}</td>
-      <td style="text-align:center;">
-        <input type="checkbox"
-          ${f.factura_pagada === "SI" ? "checked" : ""}
-          onchange="actualizarPagado('${f.uuid}', this.checked)">
-      </td>
-    </tr>`;
+return `<tr>
+  <td class="col-fecha">${f.fecha_formateada}</td>
+  <td class="col-uuid">${f.uuid_corto}</td>
+  <td class="col-proveedor">${f.razon_social_emisor}</td>
+  <td class="col-factura">${f.factura_corta}</td>
+  <td class="col-total">${formatoPesos.format(f.total)}</td>
+  <td class="col-pagada">
+    <input type="checkbox"
+      ${f.factura_pagada === "SI" ? "checked" : ""}
+      onchange="actualizarPagado('${f.uuid}', this.checked)">
+  </td>
+</tr>`;
+
   }).join('');
 
   document.getElementById('contenedorTabla').innerHTML = `
@@ -232,15 +252,15 @@ function mostrarTodos(filtroProveedor = "") {
           <th>${formatoPesos.format(totalTotal)}</th>
           <th></th>
         </tr>
-        <tr>
-          <th>Fecha</th>
-          <th>UUID</th>
-          <th>Proveedor</th>
-          <th>Factura</th>
-          <th>Total</th>
-          <th>Pagada</th>
-        </tr>
-      </thead>
+  <tr>
+    <th class="col-fecha">Fecha</th>
+    <th class="col-uuid">UUID</th>
+    <th class="col-proveedor">Proveedor</th>
+    <th class="col-factura">Factura</th>
+    <th class="col-total">Total</th>
+    <th class="col-pagada">Pagada</th>
+  </tr>
+     </thead>
       <tbody>${filas}</tbody>
     </table>`;
 }
