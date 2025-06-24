@@ -147,7 +147,8 @@ select#filtroProveedor {
 <script>
 let datos = [];
 
-fetch('https://cvpbtjlupswbyxenugpz.supabase.co/rest/v1/deuda_pddprotec25?select=*', {
+fetch('https://cvpbtjlupswbyxenugpz.supabase.co/rest/v1/deuda_pddprotec25?select=id,uuid,uuid_manual,fecha,razon_social_emisor,factura,total,factura_pagada
+', {
   headers: {
     apikey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2cGJ0amx1cHN3Ynl4ZW51Z3B6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MDIxOTQsImV4cCI6MjA2MzI3ODE5NH0.iiJsYM3TtaGPdeCtPcEXwAz3LfFc1uJGECEvOErvrqY"
   }
@@ -172,11 +173,11 @@ function formatearFecha(fechaStr) {
   return isNaN(fecha.getTime()) ? "Fecha inválida" : fecha.toLocaleDateString('es-MX');
 }
 
-function actualizarPagado(uuid, pagado) {
-  fetch(`https://cvpbtjlupswbyxenugpz.supabase.co/rest/v1/deuda_pddprotec25?uuid=eq.${uuid}`, {
+function actualizarPagado(id, pagado) {
+  fetch(`https://cvpbtjlupswbyxenugpz.supabase.co/rest/v1/deuda_pddprotec25?id=eq.${id}`, {
     method: 'PATCH',
     headers: {
-      apikey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2cGJ0amx1cHN3Ynl4ZW51Z3B6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MDIxOTQsImV4cCI6MjA2MzI3ODE5NH0.iiJsYM3TtaGPdeCtPcEXwAz3LfFc1uJGECEvOErvrqY",
+      apikey: "tu-api-key",
       "Content-Type": "application/json",
       "Prefer": "return=minimal"
     },
@@ -187,14 +188,11 @@ function actualizarPagado(uuid, pagado) {
   .then(res => {
     if (!res.ok) {
       mostrarMensaje("❌ Error al actualizar", true);
-      console.error("Error al actualizar:", res.statusText);
     } else {
       mostrarMensaje(pagado ? "✅ Marcada como pagada" : "❌ Marcada como no pagada");
-      console.log("✅ Actualizado correctamente");
     }
   });
 }
-
 function mostrarMensaje(texto, esError = false) {
   const msg = document.getElementById("mensajeFlotante");
   msg.textContent = texto;
@@ -252,14 +250,14 @@ function mostrarTodos(filtroProveedor = "") {
 
 return `<tr>
   <td class="col-fecha">${f.fecha_formateada}</td>
-  <td class="col-uuid">${f.uuid_corto}</td>
+  <td class="col-uuid">${f.uuid ? f.uuid.substring(0, 39) : f.uuid_manual}</td>
   <td class="col-proveedor">${f.razon_social_emisor}</td>
   <td class="col-factura">${f.factura_corta}</td>
   <td class="col-total">${formatoPesos.format(f.total)}</td>
   <td class="col-pagada">
     <input type="checkbox"
       ${f.factura_pagada === "SI" ? "checked" : ""}
-      onchange="actualizarPagado('${f.uuid}', this.checked)">
+      onchange="actualizarPagado('${f.uuid || f.id}', this.checked)" />
   </td>
 </tr>`;
 
