@@ -140,10 +140,10 @@ select#filtroProveedor {
   <label for="filtroProveedor">Filtrar por proveedor:</label>
   <select id="filtroProveedor" onchange="filtrarPorProveedor()">
     <option value="">-- Mostrar todos --</option>
-</select>
-<button onclick="mostrarTodos()">Ver Todos</button>
-<button onclick="exportarPDF()">Exportar a PDF</button>
-</div> <!-- Este cierre es el que faltaba -->
+  </select>
+  <button onclick="mostrarTodos()">Ver Todos</button>
+  <button onclick="exportarPDF()">Exportar a PDF</button>
+</div> <!-- ← ESTA LÍNEA FALTABA -->
 <div id="contenedorTabla"></div>
 <script>
 let datos = [];
