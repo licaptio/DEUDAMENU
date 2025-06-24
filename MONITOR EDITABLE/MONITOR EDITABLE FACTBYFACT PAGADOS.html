@@ -173,13 +173,12 @@ function formatearFecha(fechaStr) {
   return isNaN(fecha.getTime()) ? "Fecha inválida" : fecha.toLocaleDateString('es-MX');
 }
 
-function actualizarPagado(uuid, pagado) {
-  if (!uuid) {
-    mostrarMensaje("❌ No se puede actualizar: UUID nulo", true);
-    return;
-  }
+function actualizarPagado(clave, pagado) {
+  const esUUID = clave.includes("-") && clave.length === 36;
 
-  fetch(`https://cvpbtjlupswbyxenugpz.supabase.co/rest/v1/deuda_pddprotec25?uuid=eq.${uuid}`, {
+  const campo = esUUID ? "uuid" : "id";
+
+  fetch(`https://cvpbtjlupswbyxenugpz.supabase.co/rest/v1/deuda_pddprotec25?${campo}=eq.${clave}`, {
     method: 'PATCH',
     headers: {
       apikey: "TU_API_KEY",
@@ -267,7 +266,7 @@ return `<tr>
   <td class="col-pagada">
     <input type="checkbox"
       ${f.factura_pagada === "SI" ? "checked" : ""}
-      onchange="actualizarPagado('${f.uuid ? f.uuid : ''}', this.checked)"
+      onchange="actualizarPagado('${f.uuid || f.id}', this.checked)"
   </td>
 </tr>`;
 
