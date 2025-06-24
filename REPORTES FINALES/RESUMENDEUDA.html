@@ -104,7 +104,7 @@ function mostrarTodos() {
     // Si los nombres son iguales, ordena por fecha descendente
     const fechaA = new Date(a.fecha);
     const fechaB = new Date(b.fecha);
-    return fechaB - fechaA;
+    return fechaA - fechaB;
   });
 
   const formatoPesos = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' });
