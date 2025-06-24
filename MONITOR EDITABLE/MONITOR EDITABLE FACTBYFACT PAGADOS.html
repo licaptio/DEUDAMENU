@@ -226,14 +226,15 @@ function mostrarTodos(filtroProveedor = "") {
   const hoy = new Date();
   const datosFiltrados = datos
     .filter(d => (!filtroProveedor || d.razon_social_emisor === filtroProveedor))
-    .map(f => {
-      return {
-        ...f,
-        fecha_formateada: formatearFecha(f.fecha),
-        uuid_corto: f.uuid?.substring(0, 39),
-        factura_corta: (f.factura || "").substring(0, 15)
-      };
-    })
+.map(f => {
+  return {
+    ...f,
+    fecha_formateada: formatearFecha(f.fecha),
+    uuid_corto: (f.uuid && f.uuid.trim() !== "") ? f.uuid.substring(0, 39) : (f.uuid_manual || ""),
+    factura_corta: (f.factura || "").substring(0, 15)
+  };
+})
+
  .sort((a, b) => {
   const nombreA = (a.razon_social_emisor || "").toUpperCase();
   const nombreB = (b.razon_social_emisor || "").toUpperCase();
