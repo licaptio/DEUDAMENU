@@ -158,18 +158,20 @@ manualForm.addEventListener('submit', async (e) => {
   const comentario_factura_fisica = document.getElementById('comentarioManual').value;
   const concepto = document.getElementById('conceptoManual').value;
 
-  const dataManual = {
-    uuid: `MANUAL-${Date.now()}`, // identificador único manual
-    fecha,
-    razon_social_emisor,
-    rfc_emisor,
-    factura,
-    total,
-    concepto,
-    factura_fisicamente: 'NO',
-    comentario_factura_fisica,
-    factura_pagada: 'NO'
-  };
+const dataManual = {
+  uuid: null, // No usamos UUID real aquí
+  uuid_manual: `MANUAL-${Date.now()}`, // Este es el identificador único para manuales
+  fecha,
+  razon_social_emisor,
+  rfc_emisor,
+  factura,
+  total,
+  concepto,
+  factura_fisicamente: 'NO',
+  comentario_factura_fisica,
+  factura_pagada: 'NO'
+};
+
 
   const { error } = await supabase
     .from('deuda_pddprotec25')
