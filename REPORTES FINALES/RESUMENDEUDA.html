@@ -86,13 +86,26 @@ function formatearFecha(fechaStr) {
 
 function mostrarTodos() {
   const hoy = new Date();
-  const datosFiltrados = datos.filter(d => d.factura_pagada !== "SI").map(f => ({
+  const datosFiltrados = datos
+  .filter(d => d.factura_pagada !== "SI")
+  .map(f => ({
     ...f,
     fecha_formateada: formatearFecha(f.fecha),
     dias: isNaN(new Date(f.fecha).getTime()) ? null : Math.floor((hoy - new Date(f.fecha)) / (1000 * 60 * 60 * 24)),
-    uuid_corto: f.uuid?.substring(0, 39),
+    uuid_corto: f.uuid ? f.uuid.substring(0, 39) : f.uuid_manual,
     factura_corta: (f.factura || "").substring(0, 15)
-  }));
+  }))
+  .sort((a, b) => {
+    const nombreA = (a.razon_social_emisor || "").toUpperCase();
+    const nombreB = (b.razon_social_emisor || "").toUpperCase();
+    if (nombreA < nombreB) return -1;
+    if (nombreA > nombreB) return 1;
+
+    // Si los nombres son iguales, ordena por fecha descendente
+    const fechaA = new Date(a.fecha);
+    const fechaB = new Date(b.fecha);
+    return fechaB - fechaA;
+  });
 
   const formatoPesos = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' });
   let totalTotal = 0;
