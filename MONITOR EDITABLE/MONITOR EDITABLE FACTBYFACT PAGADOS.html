@@ -234,13 +234,15 @@ function mostrarTodos(filtroProveedor = "") {
         factura_corta: (f.factura || "").substring(0, 15)
       };
     })
-    .sort((a, b) => {
-      const nombreA = (a.razon_social_emisor || "").toUpperCase();
-      const nombreB = (b.razon_social_emisor || "").toUpperCase();
-      if (nombreA < nombreB) return -1;
-      if (nombreA > nombreB) return 1;
-      return new Date(a.fecha) - new Date(b.fecha);
-    });
+ .sort((a, b) => {
+  const nombreA = (a.razon_social_emisor || "").toUpperCase();
+  const nombreB = (b.razon_social_emisor || "").toUpperCase();
+  if (nombreA < nombreB) return -1;
+  if (nombreA > nombreB) return 1;
+
+  // Si el nombre es igual, ordena por fecha ascendente (más antigua primero)
+  return new Date(a.fecha) - new Date(b.fecha);
+});
 
   const formatoPesos = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' });
 
