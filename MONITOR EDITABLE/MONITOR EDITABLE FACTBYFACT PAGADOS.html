@@ -173,14 +173,19 @@ function formatearFecha(fechaStr) {
   return isNaN(fecha.getTime()) ? "Fecha inválida" : fecha.toLocaleDateString('es-MX');
 }
 
-function actualizarPagado(id, pagado) {
-  fetch(`https://cvpbtjlupswbyxenugpz.supabase.co/rest/v1/deuda_pddprotec25?id=eq.${id}`, {
+function actualizarPagado(uuid, pagado) {
+  if (!uuid) {
+    mostrarMensaje("❌ No se puede actualizar: UUID nulo", true);
+    return;
+  }
+
+  fetch(`https://cvpbtjlupswbyxenugpz.supabase.co/rest/v1/deuda_pddprotec25?uuid=eq.${uuid}`, {
     method: 'PATCH',
     headers: {
-  apikey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2cGJ0amx1cHN3Ynl4ZW51Z3B6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MDIxOTQsImV4cCI6MjA2MzI3ODE5NH0.iiJsYM3TtaGPdeCtPcEXwAz3LfFc1uJGECEvOErvrqY",
-  "Content-Type": "application/json",
-  "Prefer": "return=minimal"
-  },
+      apikey: "TU_API_KEY",
+      "Content-Type": "application/json",
+      "Prefer": "return=minimal"
+    },
     body: JSON.stringify({
       factura_pagada: pagado ? "SI" : "NO"
     })
@@ -193,6 +198,7 @@ function actualizarPagado(id, pagado) {
     }
   });
 }
+
 function mostrarMensaje(texto, esError = false) {
   const msg = document.getElementById("mensajeFlotante");
   msg.textContent = texto;
@@ -261,7 +267,7 @@ return `<tr>
   <td class="col-pagada">
     <input type="checkbox"
       ${f.factura_pagada === "SI" ? "checked" : ""}
-      onchange="actualizarPagado('${f.uuid || f.id}', this.checked)" />
+      onchange="actualizarPagado('${f.uuid ? f.uuid : ''}', this.checked)"
   </td>
 </tr>`;
 
