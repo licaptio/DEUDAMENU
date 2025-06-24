@@ -140,15 +140,15 @@ select#filtroProveedor {
   <label for="filtroProveedor">Filtrar por proveedor:</label>
   <select id="filtroProveedor" onchange="filtrarPorProveedor()">
     <option value="">-- Mostrar todos --</option>
-  </select>
-  <button onclick="mostrarTodos()">Ver Todos</button>
-  <button onclick="exportarPDF()">Exportar a PDF</button>
+</select>
+<button onclick="mostrarTodos()">Ver Todos</button>
+<button onclick="exportarPDF()">Exportar a PDF</button>
+</div> <!-- Este cierre es el que faltaba -->
 <div id="contenedorTabla"></div>
 <script>
 let datos = [];
 
-fetch('https://cvpbtjlupswbyxenugpz.supabase.co/rest/v1/deuda_pddprotec25?select=id,uuid,uuid_manual,fecha,razon_social_emisor,factura,total,factura_pagada
-', {
+fetch('https://cvpbtjlupswbyxenugpz.supabase.co/rest/v1/deuda_pddprotec25?select=id,uuid,uuid_manual,fecha,razon_social_emisor,factura,total,factura_pagada', {
   headers: {
     apikey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2cGJ0amx1cHN3Ynl4ZW51Z3B6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MDIxOTQsImV4cCI6MjA2MzI3ODE5NH0.iiJsYM3TtaGPdeCtPcEXwAz3LfFc1uJGECEvOErvrqY"
   }
