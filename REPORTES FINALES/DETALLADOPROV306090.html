@@ -103,8 +103,10 @@ td.columna-17-21 {
 <h2>Reporte General por Proveedor</h2>
 <div style="text-align: center;">
 <div>
-<button onclick="mostrarTodos()">Ver Todos</button>
-<button onclick="exportarPDF()">Exportar a PDF</button>
+  <button onclick="mostrarTodos()">Ver Todos</button>
+  <button onclick="filtrarTipo('xml')">Solo XML</button>
+  <button onclick="filtrarTipo('manual')">Solo físicas</button>
+  <button onclick="exportarPDF()">Exportar a PDF</button>
 </div>
 </div>
 <div id="contenedorTabla"></div>
@@ -134,14 +136,26 @@ function formatearFecha(fechaStr) {
   const fecha = new Date(fechaStr);
   return isNaN(fecha.getTime()) ? "Fecha inválida" : fecha.toLocaleDateString('es-MX');
 }
-function mostrarTodos() {
+function filtrarTipo(tipo) {
+  let filtrado = [];
+
+  if (tipo === "xml") {
+    filtrado = datos.filter(d => d.uuid && d.factura_pagada !== "SI");
+  } else if (tipo === "manual") {
+    filtrado = datos.filter(d => !d.uuid && d.uuid_manual && d.factura_pagada !== "SI");
+  }
+
+  mostrarTodos(null, filtrado); // llama a mostrarTodos con filtro personalizado
+}
+
+    function mostrarTodos(_, datosCustom = null) {
   if (!Array.isArray(datos)) {
     alert("No se pudieron cargar los datos correctamente.");
     return;
   }
 
   const hoy = new Date();
-  const datosFiltrados = datos
+ const datosFiltrados = (datosCustom || datos)
     .filter(d => d.factura_pagada !== "SI")
 .map(f => {
   const fecha = new Date(f.fecha);
@@ -150,7 +164,7 @@ function mostrarTodos() {
     ...f,
     fecha_formateada: formatearFecha(f.fecha),
     dias: dias,
-    uuid_corto: f.uuid?.substring(0, 39),
+    uuid_corto: f.uuid ? f.uuid.substring(0, 39) : f.uuid_manual,
     factura_corta: (f.factura || "").substring(0, 15),
 
     dias_0_7: dias !== null && dias <= 7 ? f.total : 0,
