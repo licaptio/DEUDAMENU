@@ -181,7 +181,7 @@ function actualizarPagado(clave, pagado) {
   fetch(`https://cvpbtjlupswbyxenugpz.supabase.co/rest/v1/deuda_pddprotec25?${campo}=eq.${clave}`, {
     method: 'PATCH',
     headers: {
-      apikey: "TU_API_KEY",
+      apikey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2cGJ0amx1cHN3Ynl4ZW51Z3B6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MDIxOTQsImV4cCI6MjA2MzI3ODE5NH0.iiJsYM3TtaGPdeCtPcEXwAz3LfFc1uJGECEvOErvrqY"
       "Content-Type": "application/json",
       "Prefer": "return=minimal"
     },
@@ -266,7 +266,7 @@ return `<tr>
   <td class="col-pagada">
     <input type="checkbox"
       ${f.factura_pagada === "SI" ? "checked" : ""}
-      onchange="actualizarPagado('${f.uuid || f.id}', this.checked)"
+      onchange="actualizarPagado('${f.uuid || f.id}', this.checked)"/>
   </td>
 </tr>`;
 
