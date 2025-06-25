@@ -133,7 +133,7 @@ function mostrarTodos() {
 const filas = datosFiltrados.map(f => {
   totalTotal += f.total || 0;
  let clase = '';
-if (f.dias > 60) {
+if (f.dias > 40) {
   clase = 'factura-vencida-critica';
 } else if (f.dias > 30) {
   clase = 'factura-vencida';
