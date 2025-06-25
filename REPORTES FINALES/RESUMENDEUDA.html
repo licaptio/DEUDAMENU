@@ -55,6 +55,26 @@
       word-break: break-word;
       text-align: left;
     }
+    @keyframes parpadeo {
+  0% { background-color: yellow; }
+  50% { background-color: transparent; }
+  100% { background-color: yellow; }
+}
+
+.factura-vencida {
+  animation: parpadeo 1s infinite;
+}
+@keyframes parpadeo-rojo {
+  0% { background-color: red; }
+  50% { background-color: transparent; }
+  100% { background-color: red; }
+}
+
+.factura-vencida-critica {
+  animation: parpadeo-rojo 1s infinite;
+  color: white;
+}
+    
   </style>
 </head>
 <body>
@@ -110,9 +130,16 @@ function mostrarTodos() {
   const formatoPesos = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' });
   let totalTotal = 0;
 
-  const filas = datosFiltrados.map(f => {
-    totalTotal += f.total || 0;
-    return `<tr>
+const filas = datosFiltrados.map(f => {
+  totalTotal += f.total || 0;
+ let clase = '';
+if (f.dias > 60) {
+  clase = 'factura-vencida-critica';
+} else if (f.dias > 30) {
+  clase = 'factura-vencida';
+}
+  return `<tr class="${clase}">
+
       <td>${f.fecha_formateada}</td>
       <td>${f.dias ?? ""}</td>
       <td class="uuid">${f.uuid_corto}</td>
